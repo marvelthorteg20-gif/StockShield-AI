@@ -1,10 +1,15 @@
-from utils.stock_fetcher import fetch_stock
+from utils.indicators import calculate_indicators
 
 symbol = input("Enter Stock Symbol: ").upper()
 
-data = fetch_stock(symbol)
+history, trend = calculate_indicators(symbol)
 
-print("\nStock Information\n")
+latest = history.iloc[-1]
 
-for key, value in data.items():
-    print(f"{key}: {value}")
+print("\nStock Analysis")
+print("-" * 40)
+
+print(f"Current Price : {latest['Close']:.2f}")
+print(f"SMA20         : {latest['SMA20']:.2f}")
+print(f"EMA20         : {latest['EMA20']:.2f}")
+print(f"Trend         : {trend}")
