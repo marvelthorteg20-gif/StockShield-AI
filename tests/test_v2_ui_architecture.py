@@ -82,15 +82,20 @@ def test_header_declares_v2_badge():
     assert "datetime" in text
 
 
-def test_sidebar_declares_nav_placeholders():
+def test_sidebar_declares_trading_terminal_sections():
     text = (ROOT / "components" / "sidebar.py").read_text(encoding="utf-8")
     for label in (
-        "Search Stock",
-        "Watchlist",
-        "Portfolio",
-        "Markets",
-        "News",
-        "Settings",
+        "SEARCH",
+        "WATCHLIST",
+        "GLOBAL MARKETS",
+        "MARKET OVERVIEW",
+        "MARKET STATUS",
+        "SETTINGS",
+        "AAPL",
+        "MSFT",
+        "NVDA",
+        "TSLA",
+        "GOOGL",
     ):
         assert label in text
 
