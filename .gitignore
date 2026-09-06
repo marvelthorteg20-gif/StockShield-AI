@@ -6,11 +6,16 @@ __pycache__/
 # Virtual Environment
 .venv/
 venv/
+ENV/
 
-# VS Code
+# Editors / OS
 .vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Generated reports
+# Generated reports (committed samples live under docs/sample-reports/)
 reports/
 
 # Runtime logs (keep folder)
@@ -18,7 +23,12 @@ logs/*.jsonl
 logs/*.log
 !logs/.gitkeep
 
-# Local cache
+# Local cache and env
 .cache/
+.env
+.env.local
 
-
+# Packaging
+*.egg-info/
+dist/
+build/

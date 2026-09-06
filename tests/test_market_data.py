@@ -76,3 +76,4 @@ def test_config_defaults_match_live_cli():
     assert config.RISK_PERCENT == 2.0
     assert config.EXPORT_FOLDER == "reports"
     assert config.THEME in ("color", "classic")
+    assert config.VERSION == "1.0.0"

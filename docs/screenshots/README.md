@@ -1,7 +1,6 @@
-# Screenshot placeholders
+# Screenshots
 
-Replace generated stills with live captures anytime:
-
-- `cli.png` — `python app.py` terminal session
-- `dashboard.png` — `streamlit run dashboard.py` dark workspace
-- `analyze-flow.gif` — sidebar → Analyze → result tape
+- `cli.png` — CLI terminal layout
+- `dashboard.png` — Streamlit dark workspace
+- `analyze-flow.gif` — demo loop (banner → CLI → dashboard)
+- `cli-sample.txt` — text capture of CLI sections

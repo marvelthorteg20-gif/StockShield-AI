@@ -6,7 +6,6 @@ import sys
 
 import config
 from utils.benchmark import Benchmark
-from utils.chart import plot_stock_chart
 from utils.cli import BOLD, CYAN, RED, paint, spinner
 from utils.errors import StockShieldError
 from utils.export_report import export_reports
@@ -237,6 +236,8 @@ def main() -> int:
 
         print("-" * 45)
         try:
+            from utils.chart import plot_stock_chart
+
             plot_stock_chart(history, company_name)
         except Exception as exc:
             log_event(ticker, errors=[f"chart: {exc}"], event="chart_error")

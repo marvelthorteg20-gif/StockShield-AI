@@ -1,0 +1,20 @@
+field,value
+symbol,AAPL
+company,Apple Inc.
+price,319.97
+trend,STRONG BULLISH
+rsi,53.95
+macd_status,Bullish Crossover
+ai_score,69
+recommendation,BUY
+decision.action,Accumulate
+decision.confidence,80
+decision.probability,72
+decision.holding_period,Swing
+decision.risk_reward_rating,Good
+star_rating,★★★★ BUY
+timeframes.1D,Bullish
+timeframes.alignment,70
+news_sentiment,NEUTRAL
+fundamental_score,80
+disclaimer,Sample report for StockShield AI v1.0. Not live market data.

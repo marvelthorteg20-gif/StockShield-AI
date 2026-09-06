@@ -2,6 +2,25 @@
 
 All notable changes to StockShield AI are documented in this file.
 
+## [1.0.0] - 2026-09-06
+
+First public release. No new indicators or scoring rules.
+
+### Added
+- Project logo, banner, demo GIF, and sample JSON/CSV/PDF reports under `docs/`
+- `RELEASE_NOTES.md`, `SECURITY.md`, `.env.example`
+- GitHub Actions matrix: Ubuntu + Windows
+- `config.VERSION = "1.0.0"`
+
+### Changed
+- CLI loads mplfinance only when drawing a chart
+- Export helpers use `pathlib` (same files, Windows-safe paths)
+- README is the GitHub landing page
+
+### Removed
+- Dead matplotlib GUI probe `test_chart.py`
+- Internal phase reports from the repository root
+
 ## [0.6.0] - 2026-09-06
 
 ### Added

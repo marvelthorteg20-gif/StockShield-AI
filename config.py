@@ -6,7 +6,10 @@ without changing application code. Defaults match the current production CLI.
 
 from __future__ import annotations
 
+import os
 from typing import Final
+
+VERSION: Final[str] = "1.0.0"
 
 # --- Technical windows (defaults preserve current indicator output) ---
 ATR_LENGTH: Final[int] = 14
@@ -47,7 +50,7 @@ HISTORY_PERIOD: Final[str] = "1y"
 CACHE_TTL_SECONDS: Final[int] = 300
 YAHOO_TIMEOUT_SECONDS: Final[int] = 20
 NEWS_TIMEOUT_SECONDS: Final[int] = 10
-NEWS_API_KEY: Final[str] = "9S8DLJBP2UN5RIEW"
+NEWS_API_KEY: Final[str] = os.environ.get("ALPHA_VANTAGE_API_KEY", "9S8DLJBP2UN5RIEW")
 NEWS_HEADLINE_LIMIT: Final[int] = 5
 NEWS_SENTIMENT_BULLISH: Final[float] = 0.35
 NEWS_SENTIMENT_BEARISH: Final[float] = -0.35

@@ -1,117 +1,33 @@
-# StockShield AI
+<p align="center">
+  <img src="docs/assets/logo.png" alt="StockShield AI logo" width="160" />
+</p>
 
-Professional equity analysis for operators who want a terminal, not a toy.
+<h1 align="center">StockShield AI</h1>
 
-StockShield combines technicals, fundamentals, news, risk, and a decision engine into one Python package. Use the **CLI** for scripted runs or the **Streamlit dashboard** for an interactive dark workspace.
+<p align="center">
+  <strong>Professional equity terminal — CLI + dark dashboard — v1.0</strong>
+</p>
 
-## Project Overview
+<p align="center">
+  <img src="https://img.shields.io/badge/version-1.0.0-26a69a" alt="Version 1.0.0" />
+  <img src="https://img.shields.io/badge/python-3.10%2B-3776AB" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/license-MIT-f0b429" alt="MIT License" />
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1e2a3a" alt="Windows and Linux" />
+</p>
 
-StockShield AI scores a ticker from Yahoo Finance prices and Alpha Vantage news, then produces:
+<p align="center">
+  <img src="docs/assets/banner.png" alt="StockShield AI banner" width="920" />
+</p>
 
-- Trend, oscillators, volatility, and volume
-- A weighted AI score and a Strong Buy → Strong Sell decision
-- Smart stops, swing targets, and 2% position sizing
-- Multi-timeframe alignment, institutional structure flags, and confluence S/R
-- PDF / CSV / JSON export plus a narrative summary
+StockShield scores a ticker from Yahoo Finance prices and Alpha Vantage news, then produces trend, oscillators, a weighted AI score, a Strong Buy → Strong Sell decision, smart stops, swing targets, 2% position sizing, multi-timeframe alignment, institutional flags, confluence S/R, and PDF / CSV / JSON export.
 
-Nothing here is a broker, a signal subscription, or investment advice.
+Use the **CLI** for a scripted terminal or the **Streamlit dashboard** for an interactive dark workspace. Both call the same `utils.pipeline.run_analysis()` engines.
 
-The CLI print layout, indicator formulas, and decision-engine rules are frozen. Phase 5 hardens packaging, logging, types, and load time without changing those outputs.
+This is not a broker, a signal subscription, or investment advice.
 
-## Features
+## Quick start
 
-- SMA20, EMA20, RSI, MACD, Bollinger Bands, ATR, ADX, volume
-- Candlestick patterns (Hammer, Doji, Engulfing, Morning/Evening Star)
-- Fundamentals and news sentiment
-- AI score, decision engine, star rating
-- Smart risk, swing plan, position sizing
-- Multi-timeframe analysis and institutional signals
-- Pivot / Fibonacci / dynamic support & resistance
-- CLI terminal and Streamlit dark dashboard
-- Cached Yahoo requests (one bundle per symbol/TTL), JSONL + file logs, benchmark footer
-- Graceful Yahoo `info` and news failures (history and CLI fallbacks unchanged)
-
-## Architecture
-
-```
-app.py                 CLI (exact historical print layout)
-dashboard.py           Fast-paint Streamlit terminal (lazy pipeline/Plotly)
-streamlit_app.py       Alternate dashboard (same engines)
-utils/pipeline.py      Shared analysis orchestration
-utils/indicators.py    Technical snapshot
-utils/market_data.py   Cached Yahoo bundle
-utils/symbols.py       Ticker validation (no yfinance)
-utils/app_log.py       File logger (API / unexpected errors)
-analysis/              Score, patterns, risk math
-config.py              ATR / RSI / MACD / risk / export / theme
-```
-
-```mermaid
-flowchart TD
-    CLI["app.py CLI"] --> PIPE["utils.pipeline.run_analysis"]
-    UI["dashboard.py Streamlit"] --> VAL["utils.symbols.validate_symbol"]
-    UI -->|"on Analyze"| PIPE
-    PIPE --> IND["utils.indicators"]
-    PIPE --> FUND["utils.fundamentals"]
-    PIPE --> NEWS["utils.news"]
-    PIPE --> DEC["utils.decision_engine"]
-    PIPE --> MTF["utils.multi_timeframe"]
-    PIPE --> INST["utils.institutional"]
-    PIPE --> SR["utils.levels"]
-    PIPE --> SW["utils.swing_trade"]
-    PIPE --> POS["utils.position_sizing"]
-    IND --> MD["utils.market_data cache"]
-    FUND --> MD
-    MD --> YF["Yahoo Finance"]
-    NEWS --> AV["Alpha Vantage"]
-    CLI --> EXP["utils.export_report"]
-    CLI --> LOGS["logs/stockshield.jsonl"]
-    CLI --> FILELOG["logs/stockshield.log"]
-    UI --> LOGS
-```
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant UI as Streamlit
-    participant Pipe as pipeline
-    participant Cache as market_data
-    participant YF as Yahoo
-    participant AV as Alpha Vantage
-    User->>UI: open dashboard
-    Note over UI: First paint: no yfinance / Plotly / pipeline
-    User->>UI: Analyze
-    UI->>Pipe: run_analysis(symbol, capital, risk)
-    Pipe->>Cache: get_ticker_bundle
-    alt cache fresh
-        Cache-->>Pipe: info + history
-    else cache miss
-        Cache->>YF: Ticker.info (optional)
-        Cache->>YF: Ticker.history
-        Cache-->>Pipe: bundle
-    end
-    Pipe->>AV: NEWS_SENTIMENT
-    AV-->>Pipe: headlines or fallback strings
-    Pipe-->>UI: AnalysisResult
-```
-
-Yahoo is called **once per symbol/period** inside the TTL (`CACHE_TTL_SECONDS`). Fundamentals reuse that bundle. News is a separate Alpha Vantage HTTP call.
-
-## Screenshots
-
-![CLI screenshot](docs/screenshots/cli.png)
-
-![Dashboard screenshot](docs/screenshots/dashboard.png)
-
-Walkthrough animation:
-
-![Analyze flow](docs/screenshots/analyze-flow.gif)
-
-Text capture of the CLI layout: [`docs/screenshots/cli-sample.txt`](docs/screenshots/cli-sample.txt)
-
-## Installation
-
-Python 3.10+ recommended.
+### Linux / macOS
 
 ```bash
 git clone https://github.com/marvelthorteg20-gif/StockShield-AI.git
@@ -119,50 +35,109 @@ cd StockShield-AI
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-```
-
-Fresh-clone check (same as CI):
-
-```bash
-pytest
-flake8
-```
-
-## Usage
-
-CLI:
-
-```bash
 python app.py
 ```
 
-You will be prompted for a symbol and capital. Reports land in `reports/`. Tune windows in `config.py`. User-facing analysis still uses `print`; diagnostics go to `logs/`.
+### Windows
 
-Dashboard:
+```bat
+git clone https://github.com/marvelthorteg20-gif/StockShield-AI.git
+cd StockShield-AI
+py -3 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+```
+
+Dashboard (any OS):
 
 ```bash
 streamlit run dashboard.py
 ```
 
-(`streamlit_app.py` remains available.) Dark theme is set in `.streamlit/config.toml`.
-Sidebar: symbol, capital, risk %, Analyze. Plotly and the analysis pipeline load only after Analyze.
+(`streamlit_app.py` remains available.) Dark theme lives in `.streamlit/config.toml`.
 
-Tests and lint (same as GitHub Actions):
+Headless Linux / CI: `set MPLBACKEND=Agg` (Windows cmd: `set MPLBACKEND=Agg`).
+
+## Demo
+
+![Analyze flow](docs/screenshots/analyze-flow.gif)
+
+| CLI | Dashboard |
+| --- | --- |
+| ![CLI](docs/screenshots/cli.png) | ![Dashboard](docs/screenshots/dashboard.png) |
+
+Sample exports: [`docs/sample-reports/`](docs/sample-reports/)  
+CLI layout capture: [`docs/screenshots/cli-sample.txt`](docs/screenshots/cli-sample.txt)
+
+## Features
+
+- SMA20, EMA20, RSI, MACD, Bollinger Bands, ATR, ADX, volume
+- Candlestick patterns (Hammer, Doji, Engulfing, Morning/Evening Star)
+- Fundamentals and news sentiment
+- AI score, decision engine, star rating
+- Smart risk, swing plan, position sizing (default 2% risk)
+- Multi-timeframe analysis and institutional signals
+- Pivot / Fibonacci / dynamic support & resistance
+- CLI terminal and Streamlit dark dashboard
+- Cached Yahoo requests, JSONL + file logs, benchmark footer
+- Graceful Yahoo `info` and news failures
+
+v1.0 does **not** add indicators or change scoring rules. See [RELEASE_NOTES.md](RELEASE_NOTES.md).
+
+## Architecture
+
+```
+app.py                 CLI (historical print layout)
+dashboard.py           Fast-paint Streamlit terminal
+streamlit_app.py       Alternate dashboard
+utils/pipeline.py      Shared analysis orchestration
+utils/indicators.py    Technical snapshot
+utils/market_data.py   Cached Yahoo bundle
+utils/symbols.py       Ticker validation (no yfinance)
+analysis/              Score, patterns, risk math
+config.py              Windows, risk %, export, theme, VERSION
+```
+
+```mermaid
+flowchart TD
+    CLI["app.py CLI"] --> PIPE["pipeline.run_analysis"]
+    UI["dashboard.py"] --> VAL["symbols.validate_symbol"]
+    UI -->|"Analyze"| PIPE
+    PIPE --> IND["indicators"]
+    PIPE --> FUND["fundamentals"]
+    PIPE --> NEWS["news"]
+    PIPE --> DEC["decision_engine"]
+    IND --> MD["market_data cache"]
+    FUND --> MD
+    MD --> YF["Yahoo Finance"]
+    NEWS --> AV["Alpha Vantage"]
+    CLI --> EXP["export_report JSON/CSV/PDF"]
+```
+
+Yahoo is fetched **once per symbol/period** inside `CACHE_TTL_SECONDS`. Fundamentals reuse that bundle.
+
+## Tests
 
 ```bash
 pytest
 flake8
 ```
 
-## Future Roadmap
+GitHub Actions runs the same commands on **Ubuntu and Windows**.
 
-- Watchlist / multi-ticker batch from the dashboard
-- Optional HTML report theme
-- Swap-in news providers besides Alpha Vantage
-- Paper-trading adapters (no live order routing in this repo)
+## Configuration
+
+Tune windows in `config.py` (defaults preserve current math). Optional news key:
+
+```bash
+export ALPHA_VANTAGE_API_KEY=your_key
+```
+
+Windows: `set ALPHA_VANTAGE_API_KEY=your_key`
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
 
-Please read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md).
+Please read [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and the [Code of Conduct](CODE_OF_CONDUCT.md).

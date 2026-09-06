@@ -1,0 +1,25 @@
+{
+  "symbol": "AAPL",
+  "company": "Apple Inc.",
+  "price": 319.97,
+  "trend": "STRONG BULLISH",
+  "rsi": 53.95,
+  "macd_status": "Bullish Crossover",
+  "ai_score": 69,
+  "recommendation": "BUY",
+  "decision": {
+    "action": "Accumulate",
+    "confidence": 80,
+    "probability": 72,
+    "holding_period": "Swing",
+    "risk_reward_rating": "Good"
+  },
+  "star_rating": "\u2605\u2605\u2605\u2605 BUY",
+  "timeframes": {
+    "1D": "Bullish",
+    "alignment": 70
+  },
+  "news_sentiment": "NEUTRAL",
+  "fundamental_score": 80,
+  "disclaimer": "Sample report for StockShield AI v1.0. Not live market data."
+}

@@ -1,0 +1,80 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 5 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+5 0 obj
+<< /Length 757 >>
+stream
+BT
+/F1 9 Tf
+14 TL
+48 800 Td
+(StockShield AI v1.0 Sample - AAPL) Tj
+T*
+(========================================) Tj
+T*
+() Tj
+T*
+(symbol: AAPL) Tj
+T*
+(company: Apple Inc.) Tj
+T*
+(price: 319.97) Tj
+T*
+(trend: STRONG BULLISH) Tj
+T*
+(rsi: 53.95) Tj
+T*
+(macd_status: Bullish Crossover) Tj
+T*
+(ai_score: 69) Tj
+T*
+(recommendation: BUY) Tj
+T*
+(decision.action: Accumulate) Tj
+T*
+(decision.confidence: 80) Tj
+T*
+(decision.probability: 72) Tj
+T*
+(decision.holding_period: Swing) Tj
+T*
+(decision.risk_reward_rating: Good) Tj
+T*
+(star_rating: ???? BUY) Tj
+T*
+(timeframes.1D: Bullish) Tj
+T*
+(timeframes.alignment: 70) Tj
+T*
+(news_sentiment: NEUTRAL) Tj
+T*
+(fundamental_score: 80) Tj
+T*
+(disclaimer: Sample report for StockShield AI v1.0. Not live market data.) Tj
+T*
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000000311 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1119
+%%EOF

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -29,19 +29,22 @@ def _flatten(payload: Dict[str, Any], prefix: str = "") -> List[Tuple[str, Any]]
 
 def export_json(payload: Dict[str, Any], path: str) -> str:
     """Write *payload* as pretty-printed JSON."""
-    with open(path, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, indent=2, default=str)
-    return path
+    dest = Path(path)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
+    return str(dest)
 
 
 def export_csv(payload: Dict[str, Any], path: str) -> str:
     """Write a two-column field/value CSV of the flattened payload."""
     rows = _flatten(payload)
-    with open(path, "w", encoding="utf-8", newline="") as handle:
+    dest = Path(path)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with dest.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
         writer.writerow(["field", "value"])
         writer.writerows(rows)
-    return path
+    return str(dest)
 
 
 def _pdf_escape(text: Any) -> str:
@@ -127,10 +130,10 @@ def export_pdf(payload: Dict[str, Any], path: str, title: str = "StockShield AI 
         f"trailer\n<< /Size {max_id + 1} /Root 1 0 R >>\nstartxref\n{xref_pos}\n%%EOF\n".encode()
     )
 
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "wb") as handle:
-        handle.write(pdf)
-    return path
+    dest = Path(path)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_bytes(pdf)
+    return str(dest)
 
 
 def export_reports(
@@ -143,12 +146,13 @@ def export_reports(
         import config as _config
 
         directory = _config.EXPORT_FOLDER
-    os.makedirs(directory, exist_ok=True)
+    folder = Path(directory)
+    folder.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    base = os.path.join(directory, f"{symbol}_{stamp}")
+    base = folder / f"{symbol}_{stamp}"
     paths = {
-        "json": export_json(payload, base + ".json"),
-        "csv": export_csv(payload, base + ".csv"),
-        "pdf": export_pdf(payload, base + ".pdf", title=f"StockShield AI - {symbol}"),
+        "json": export_json(payload, str(base) + ".json"),
+        "csv": export_csv(payload, str(base) + ".csv"),
+        "pdf": export_pdf(payload, str(base) + ".pdf", title=f"StockShield AI - {symbol}"),
     }
     return paths
