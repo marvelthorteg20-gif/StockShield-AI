@@ -73,17 +73,17 @@ def detect_institutional_signals(history, high_52=None, low_52=None, support=Non
     gap_conf = _clamp(25 + gap_pct * 18)
 
     return {
-        "unusual_volume": {"detected": bool(unusual), "confidence": unusual_conf if unusual else min(unusual_conf, 35)},
-        "breakout": {"detected": bool(breakout), "confidence": breakout_conf if breakout else min(breakout_conf, 30)},
-        "breakdown": {"detected": bool(breakdown), "confidence": breakdown_conf if breakdown else min(breakdown_conf, 30)},
+        "unusual_volume": {"detected": bool(unusual), "confidence": max(10, unusual_conf if unusual else min(unusual_conf, 35))},
+        "breakout": {"detected": bool(breakout), "confidence": max(10, breakout_conf if breakout else min(breakout_conf, 30))},
+        "breakdown": {"detected": bool(breakdown), "confidence": max(10, breakdown_conf if breakdown else min(breakdown_conf, 30))},
         "near_52w_high": {
             "detected": bool(near_high),
-            "confidence": near_high_conf if near_high else min(near_high_conf, 40),
+            "confidence": max(10, near_high_conf if near_high else min(near_high_conf, 40)),
         },
         "near_52w_low": {
             "detected": bool(near_low),
-            "confidence": near_low_conf if near_low else min(near_low_conf, 40),
+            "confidence": max(10, near_low_conf if near_low else min(near_low_conf, 40)),
         },
-        "gap_up": {"detected": bool(gap_up), "confidence": gap_conf if gap_up else min(gap_conf, 25)},
-        "gap_down": {"detected": bool(gap_down), "confidence": gap_conf if gap_down else min(gap_conf, 25)},
+        "gap_up": {"detected": bool(gap_up), "confidence": max(10, gap_conf if gap_up else min(gap_conf, 25))},
+        "gap_down": {"detected": bool(gap_down), "confidence": max(10, gap_conf if gap_down else min(gap_conf, 25))},
     }
