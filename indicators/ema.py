@@ -1,7 +1,14 @@
-def calculate_ema(history):
+"""Exponential moving-average column helpers."""
 
-    history["EMA20"] = history["Close"].ewm(span=20, adjust=False).mean()
+from __future__ import annotations
 
-    history["EMA50"] = history["Close"].ewm(span=50, adjust=False).mean()
+import pandas as pd
 
+import config
+
+
+def calculate_ema(history: pd.DataFrame) -> pd.DataFrame:
+    """Add EMA20 and EMA50 columns in place and return *history*."""
+    history["EMA20"] = history["Close"].ewm(span=config.EMA_WINDOW, adjust=False).mean()
+    history["EMA50"] = history["Close"].ewm(span=config.EMA_MEDIUM_WINDOW, adjust=False).mean()
     return history

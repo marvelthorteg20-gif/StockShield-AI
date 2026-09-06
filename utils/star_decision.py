@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any, Dict, Optional
+
 STAR_MAP = {
     "Strong Buy": ("★★★★★", "STRONG BUY"),
     "Buy": ("★★★★", "BUY"),
@@ -13,7 +15,7 @@ STAR_MAP = {
 }
 
 
-def rate_star_decision(decision):
+def rate_star_decision(decision: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """Convert the existing decision-engine action into a 5-star rating."""
     action = (decision or {}).get("action", "Hold")
     stars, label = STAR_MAP.get(action, ("★★★", "HOLD"))

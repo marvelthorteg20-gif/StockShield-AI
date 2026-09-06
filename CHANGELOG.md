@@ -2,6 +2,23 @@
 
 All notable changes to StockShield AI are documented in this file.
 
+## [0.6.0] - 2026-09-06
+
+### Added
+- `utils/symbols.py` so Streamlit first paint can validate tickers without yfinance.
+- `utils/app_log.py` file logging for API and unexpected failures.
+- Architecture diagrams, CLI/dashboard screenshots, and a GIF in the README.
+- Graceful Yahoo `info` failures (empty metadata; history still required).
+
+### Changed
+- Named constants in `config.py` for SMA/EMA/BB/ADX windows (same numeric values).
+- Lazy pipeline/Plotly imports in both Streamlit entry points.
+- Types and docstrings across analysis and utility modules.
+- Duplicate numeric helpers routed through `utils.common` where behavior matches.
+
+### Fixed
+- News and Yahoo metadata errors are logged instead of failing silently.
+
 ## [0.5.0] - 2026-09-06
 
 ### Added

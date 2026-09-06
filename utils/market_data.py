@@ -7,7 +7,6 @@ and reuses the bundle for ``CACHE_TTL_SECONDS``.
 
 from __future__ import annotations
 
-import re
 import time
 from typing import Any, Dict, Optional, Tuple
 
@@ -15,7 +14,11 @@ import pandas as pd
 import yfinance as yf
 
 import config
-from utils.errors import EmptyDataError, InvalidTickerError, NetworkError
+from utils.app_log import get_logger
+from utils.errors import EmptyDataError, NetworkError
+from utils.symbols import validate_symbol
+
+logger = get_logger("market_data")
 
 TickerBundle = Dict[str, Any]
 
@@ -28,7 +31,7 @@ _TIMINGS: Dict[str, float] = {
     "cache_misses": 0,
 }
 
-_TICKER_RE = re.compile(r"^[A-Z0-9.\-]{1,15}$")
+_NETWORK_TOKENS = ("network", "timeout", "temporarily", "connection", "resolve")
 
 
 def reset_cache() -> None:
@@ -64,12 +67,28 @@ def api_response_seconds() -> float:
     )
 
 
-def validate_symbol(symbol: str) -> str:
-    """Normalize and validate a ticker symbol."""
-    cleaned = str(symbol or "").strip().upper()
-    if not cleaned or not _TICKER_RE.match(cleaned):
-        raise InvalidTickerError(f"Invalid ticker: {symbol!r}")
-    return cleaned
+def _as_network_error(exc: Exception) -> NetworkError:
+    """Map a transport failure to the public NetworkError message."""
+    message = str(exc).lower()
+    if any(token in message for token in _NETWORK_TOKENS):
+        return NetworkError("No internet or Yahoo Finance is unreachable.")
+    return NetworkError("Unable to fetch market data.")
+
+
+def _read_info(stock: Any, ticker: str) -> Dict[str, Any]:
+    """Load Yahoo ``info``; empty dict on failure so history can still proceed."""
+    started = time.perf_counter()
+    try:
+        info = stock.info or {}
+        if not isinstance(info, dict):
+            logger.warning("Yahoo info for %s was not a dict; using empty metadata.", ticker)
+            info = {}
+        return info
+    except Exception as exc:
+        logger.warning("Yahoo ticker.info failed for %s: %s", ticker, exc)
+        return {}
+    finally:
+        _TIMINGS["yahoo_info_s"] += time.perf_counter() - started
 
 
 def get_ticker_bundle(
@@ -95,25 +114,24 @@ def get_ticker_bundle(
         and now - cached["ts"] < config.CACHE_TTL_SECONDS
     ):
         _TIMINGS["cache_hits"] += 1
+        logger.debug("Yahoo cache hit for %s (%s)", ticker, period)
         return cached["bundle"]
 
     _TIMINGS["cache_misses"] += 1
     try:
         stock = yf.Ticker(ticker)
-        started = time.perf_counter()
-        info = stock.info or {}
-        _TIMINGS["yahoo_info_s"] += time.perf_counter() - started
-        started = time.perf_counter()
-        history = stock.history(period=period)
-        _TIMINGS["yahoo_history_s"] += time.perf_counter() - started
     except Exception as exc:
-        message = str(exc).lower()
-        if any(
-            token in message
-            for token in ("network", "timeout", "temporarily", "connection", "resolve")
-        ):
-            raise NetworkError("No internet or Yahoo Finance is unreachable.") from exc
-        raise NetworkError("Unable to fetch market data.") from exc
+        raise _as_network_error(exc) from exc
+
+    info = _read_info(stock, ticker)
+
+    started = time.perf_counter()
+    try:
+        history = stock.history(period=period)
+    except Exception as exc:
+        raise _as_network_error(exc) from exc
+    finally:
+        _TIMINGS["yahoo_history_s"] += time.perf_counter() - started
 
     if history is None or getattr(history, "empty", True):
         raise EmptyDataError("No stock data found.")

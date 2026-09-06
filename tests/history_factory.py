@@ -1,8 +1,22 @@
+"""Helpers for building deterministic OHLCV frames in tests."""
+
+from __future__ import annotations
+
+from typing import Any, List
+
 import pandas as pd
 
 
-def make_history(rows, start=100.0, drift=0.4, volume=1_000_000, gap=0.0, volume_spike=1.0):
-    records = []
+def make_history(
+    rows: int,
+    start: float = 100.0,
+    drift: float = 0.4,
+    volume: float = 1_000_000,
+    gap: float = 0.0,
+    volume_spike: float = 1.0,
+) -> pd.DataFrame:
+    """Build a simple trending OHLCV frame with *rows* sessions."""
+    records: List[dict[str, Any]] = []
     price = start
     for index in range(rows):
         if index == rows - 1 and gap:

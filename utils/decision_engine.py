@@ -7,6 +7,11 @@ This module is additive and does not replace existing recommendations.
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Tuple
+
+from utils.common import as_text as _text
+from utils.common import safe_float as _safe_float
+
 ACTIONS = (
     "Strong Buy",
     "Buy",
@@ -20,22 +25,11 @@ ACTIONS = (
 BULLISH_PATTERNS = {"Hammer", "Bullish Engulfing", "Morning Star"}
 BEARISH_PATTERNS = {"Bearish Engulfing", "Evening Star"}
 
-
-def _text(value):
-    return str(value or "").upper()
+Bias = Tuple[int, str]
 
 
-def _safe_float(value, default=0.0):
-    try:
-        number = float(value)
-        if number != number:
-            return default
-        return number
-    except (TypeError, ValueError):
-        return default
-
-
-def _normalize_patterns(candlestick_pattern):
+def _normalize_patterns(candlestick_pattern: Any) -> List[str]:
+    """Turn a pattern string or list into a list of names."""
     if candlestick_pattern is None:
         return []
     if isinstance(candlestick_pattern, str):
@@ -44,7 +38,8 @@ def _normalize_patterns(candlestick_pattern):
     return [str(item) for item in candlestick_pattern if item]
 
 
-def _trend_bias(trend):
+def _trend_bias(trend: Any) -> Bias:
+    """Score the existing trend label."""
     label = _text(trend)
     if "STRONG BULLISH" in label:
         return 28, "Trend is strongly bullish."
@@ -57,7 +52,8 @@ def _trend_bias(trend):
     return 0, "Trend is neutral."
 
 
-def _macd_bias(macd_status):
+def _macd_bias(macd_status: Any) -> Bias:
+    """Score MACD status text."""
     label = _text(macd_status)
     if "BULLISH" in label:
         return 16, "MACD shows a bullish crossover."
@@ -66,7 +62,8 @@ def _macd_bias(macd_status):
     return 0, "MACD is neutral."
 
 
-def _rsi_bias(rsi):
+def _rsi_bias(rsi: float) -> Bias:
+    """Score RSI using the original band table."""
     if rsi != rsi:
         return 0, "RSI is unavailable."
     if 45 <= rsi <= 65:
@@ -80,7 +77,8 @@ def _rsi_bias(rsi):
     return -14, f"RSI ({rsi:.1f}) is overbought."
 
 
-def _bb_bias(bb_signal):
+def _bb_bias(bb_signal: Any) -> Bias:
+    """Score Bollinger-band location text."""
     label = _text(bb_signal)
     if "OVERSOLD" in label or "LOWER" in label:
         return 8, "Price is at or below the lower Bollinger Band."
@@ -89,7 +87,8 @@ def _bb_bias(bb_signal):
     return 2, "Price is inside the Bollinger Bands."
 
 
-def _volume_bias(volume_status, trend_score):
+def _volume_bias(volume_status: Any, trend_score: int) -> Bias:
+    """Score volume confirmation relative to trend bias."""
     label = _text(volume_status)
     high = "HIGH" in label
     if high and trend_score > 0:
@@ -101,7 +100,8 @@ def _volume_bias(volume_status, trend_score):
     return -2, "Volume is below average, so conviction is weaker."
 
 
-def _news_bias(news_sentiment):
+def _news_bias(news_sentiment: Any) -> Bias:
+    """Score news sentiment text."""
     label = _text(news_sentiment)
     if "BULLISH" in label:
         return 12, "News sentiment is bullish."
@@ -112,7 +112,8 @@ def _news_bias(news_sentiment):
     return 0, "News sentiment is neutral."
 
 
-def _fundamental_bias(fundamental_score):
+def _fundamental_bias(fundamental_score: Any) -> Bias:
+    """Score the 0–100 fundamental number."""
     score = _safe_float(fundamental_score, 50.0)
     if score > 80:
         return 15, f"Fundamental score ({score:.0f}/100) is strong."
@@ -123,7 +124,8 @@ def _fundamental_bias(fundamental_score):
     return -12, f"Fundamental score ({score:.0f}/100) is weak."
 
 
-def _risk_bias(risk_level):
+def _risk_bias(risk_level: Any) -> Bias:
+    """Score the existing risk badge."""
     label = _text(risk_level)
     if "HIGH" in label:
         return -8, "Risk level is high."
@@ -132,7 +134,8 @@ def _risk_bias(risk_level):
     return 0, "Risk level is moderate."
 
 
-def _atr_bias(atr, adx):
+def _atr_bias(atr: Any, adx: float) -> Bias:
+    """Score ATR in the context of ADX."""
     atr_value = _safe_float(atr, 0.0)
     if atr_value <= 0:
         return 0, "ATR is unavailable."
@@ -141,7 +144,8 @@ def _atr_bias(atr, adx):
     return 2, f"ATR({atr_value:.2f}) is factored into position sizing."
 
 
-def _adx_adjustment(adx, trend_score):
+def _adx_adjustment(adx: float, trend_score: int) -> Bias:
+    """Adjust conviction from ADX strength and trend direction."""
     if adx > 40:
         boost = 12 if trend_score > 0 else -12 if trend_score < 0 else 0
         return boost, f"ADX ({adx:.1f}) shows a very strong trend."
@@ -153,7 +157,8 @@ def _adx_adjustment(adx, trend_score):
     return -6, f"ADX ({adx:.1f}) shows a weak trend."
 
 
-def _pattern_bias(patterns):
+def _pattern_bias(patterns: List[str]) -> Bias:
+    """Score detected candlestick pattern names."""
     bullish = [name for name in patterns if name in BULLISH_PATTERNS]
     bearish = [name for name in patterns if name in BEARISH_PATTERNS]
     doji = [name for name in patterns if name == "Doji"]
@@ -171,7 +176,8 @@ def _pattern_bias(patterns):
     return 0, "No decisive candlestick pattern."
 
 
-def _action_from_score(score):
+def _action_from_score(score: float) -> str:
+    """Map conviction to Strong Buy … Strong Sell."""
     if score >= 55:
         return "Strong Buy"
     if score >= 35:
@@ -187,7 +193,15 @@ def _action_from_score(score):
     return "Strong Sell"
 
 
-def _matches_strong_buy(trend, rsi, macd_status, fundamental_score, news_sentiment, adx):
+def _matches_strong_buy(
+    trend: Any,
+    rsi: float,
+    macd_status: Any,
+    fundamental_score: Any,
+    news_sentiment: Any,
+    adx: float,
+) -> bool:
+    """True when the original Strong Buy overlay conditions all fire."""
     return (
         "STRONG BULLISH" in _text(trend)
         and "BULLISH" in _text(macd_status)
@@ -199,7 +213,13 @@ def _matches_strong_buy(trend, rsi, macd_status, fundamental_score, news_sentime
     )
 
 
-def _matches_reduce_setup(trend, rsi, macd_status, news_sentiment):
+def _matches_reduce_setup(
+    trend: Any,
+    rsi: float,
+    macd_status: Any,
+    news_sentiment: Any,
+) -> bool:
+    """True when the original Reduce overlay conditions all fire."""
     trend_label = _text(trend)
     news_label = _text(news_sentiment)
     return (
@@ -210,7 +230,14 @@ def _matches_reduce_setup(trend, rsi, macd_status, news_sentiment):
     )
 
 
-def _holding_period(action, adx, atr, fundamental_score, risk_level):
+def _holding_period(
+    action: str,
+    adx: float,
+    atr: float,
+    fundamental_score: Any,
+    risk_level: Any,
+) -> str:
+    """Pick Intraday / Swing / Position / Long Term from existing rules."""
     high_risk = "HIGH" in _text(risk_level)
     strong_fundamentals = _safe_float(fundamental_score, 50.0) > 80
     high_volatility = _safe_float(atr, 0.0) > 0 and adx < 20 and high_risk
@@ -228,7 +255,14 @@ def _holding_period(action, adx, atr, fundamental_score, risk_level):
     return "Swing"
 
 
-def _risk_reward_rating(action, adx, risk_level, risk_reward, rsi):
+def _risk_reward_rating(
+    action: str,
+    adx: float,
+    risk_level: Any,
+    risk_reward: Any,
+    rsi: float,
+) -> str:
+    """Rate R/R as Excellent / Good / Average / Poor."""
     rr = _safe_float(risk_reward, 2.0)
     high_risk = "HIGH" in _text(risk_level)
     overbought = rsi > 70
@@ -247,26 +281,27 @@ def _risk_reward_rating(action, adx, risk_level, risk_reward, rsi):
     return "Poor"
 
 
-def _probability(confidence, reasons_aligned, total_signals):
+def _probability(confidence: float, reasons_aligned: int, total_signals: int) -> int:
+    """Blend confidence and signal agreement into a 15–95 probability."""
     alignment = 100.0 * reasons_aligned / max(total_signals, 1)
     estimate = 0.55 * confidence + 0.35 * alignment + 8
     return int(max(15, min(95, round(estimate))))
 
 
 def generate_decision(
-    trend,
-    rsi,
-    macd_status,
-    bb_signal,
-    atr,
-    adx,
-    volume_status,
-    news_sentiment,
-    fundamental_score,
-    risk_level,
-    candlestick_pattern,
-    risk_reward=None,
-):
+    trend: Any,
+    rsi: Any,
+    macd_status: Any,
+    bb_signal: Any,
+    atr: Any,
+    adx: Any,
+    volume_status: Any,
+    news_sentiment: Any,
+    fundamental_score: Any,
+    risk_level: Any,
+    candlestick_pattern: Any,
+    risk_reward: Any = None,
+) -> Dict[str, Any]:
     """Combine every available signal into one professional decision.
 
     Returns a dict with action, confidence, reasons, holding_period,

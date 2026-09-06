@@ -2,8 +2,15 @@
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional
 
-def _safe(value, default=None):
+import pandas as pd
+
+import config
+
+
+def _safe(value: Any, default: Optional[float] = None) -> Optional[float]:
+    """Parse a float, returning *default* for None/NaN/invalid."""
     try:
         number = float(value)
         if number != number:
@@ -13,7 +20,8 @@ def _safe(value, default=None):
         return default
 
 
-def _classic_pivots(high, low, close):
+def _classic_pivots(high: float, low: float, close: float) -> List[Dict[str, Any]]:
+    """Classic floor-trader pivot set for one reference bar."""
     pivot = (high + low + close) / 3.0
     return [
         {"name": "Pivot R2", "price": pivot + (high - low), "kind": "Resistance", "family": "Pivot"},
@@ -24,7 +32,8 @@ def _classic_pivots(high, low, close):
     ]
 
 
-def _fibonacci_levels(swing_high, swing_low):
+def _fibonacci_levels(swing_high: float, swing_low: float) -> List[Dict[str, Any]]:
+    """Retracement levels from swing high to swing low."""
     span = swing_high - swing_low
     ratios = (
         ("Fib 0.0%", 0.0),
@@ -43,7 +52,10 @@ def _fibonacci_levels(swing_high, swing_low):
     return levels
 
 
-def calculate_sr_engine(history, lookback=60):
+def calculate_sr_engine(
+    history: Optional[pd.DataFrame],
+    lookback: int = config.SR_LOOKBACK,
+) -> List[Dict[str, Any]]:
     """Return strongest support/resistance levels first."""
     if history is None or len(history) < 5:
         return []
@@ -55,8 +67,8 @@ def calculate_sr_engine(history, lookback=60):
     low = _safe(ref["Low"], close)
     ref_close = _safe(ref["Close"], close)
 
-    sma20 = _safe(history["Close"].tail(20).mean(), close)
-    ema20 = _safe(history["Close"].ewm(span=20, adjust=False).mean().iloc[-1], close)
+    sma20 = _safe(history["Close"].tail(config.SMA_WINDOW).mean(), close)
+    ema20 = _safe(history["Close"].ewm(span=config.EMA_WINDOW, adjust=False).mean().iloc[-1], close)
     swing_high = _safe(window["High"].max(), close)
     swing_low = _safe(window["Low"].min(), close)
     recent_high = _safe(history["High"].tail(10).max(), close)
@@ -81,7 +93,12 @@ def calculate_sr_engine(history, lookback=60):
     return clustered
 
 
-def _cluster_and_rank(levels, close, tolerance=0.004):
+def _cluster_and_rank(
+    levels: List[Dict[str, Any]],
+    close: float,
+    tolerance: float = 0.004,
+) -> List[Dict[str, Any]]:
+    """Merge nearby levels and rank by confluence."""
     usable = [item for item in levels if item["price"] is not None]
     ranked = []
     used = set()

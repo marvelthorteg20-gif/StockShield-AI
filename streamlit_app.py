@@ -8,11 +8,11 @@ import tempfile
 import streamlit as st
 
 import config
+from utils.app_log import get_logger
 from utils.errors import StockShieldError
-from utils.export_report import export_csv, export_json, export_pdf
-from utils.pipeline import INSTITUTIONAL_LABELS, run_analysis
-from utils.plotly_charts import candlestick_figure, score_gauge
 from utils.session_log import log_event
+
+logger = get_logger("streamlit_app")
 
 st.set_page_config(
     page_title="StockShield AI",
@@ -23,6 +23,7 @@ st.set_page_config(
 
 
 def _card(title: str) -> None:
+    """Section heading used by the legacy Streamlit layout."""
     st.markdown(f"### {title}")
 
 
@@ -65,6 +66,10 @@ def render_dashboard() -> None:
         st.info("Enter a symbol in the sidebar and click **Analyze**.")
         return
 
+    from utils.export_report import export_csv, export_json, export_pdf
+    from utils.pipeline import INSTITUTIONAL_LABELS, run_analysis
+    from utils.plotly_charts import candlestick_figure, score_gauge
+
     try:
         with st.spinner("Fetching market data and running the engine…"):
             result = run_analysis(symbol, capital=capital, risk_pct=risk_pct)
@@ -74,6 +79,7 @@ def render_dashboard() -> None:
         return
     except Exception as exc:
         log_event(symbol or "UNKNOWN", errors=[repr(exc)], event="dashboard_error")
+        logger.exception("Dashboard analysis failed for %s", symbol or "UNKNOWN")
         st.error("Unexpected error. See logs/ for details.")
         return
 

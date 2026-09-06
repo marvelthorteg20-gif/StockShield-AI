@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from typing import Any, Dict, Tuple
 
+from utils.app_log import get_logger
 from utils.common import safe_float
 from utils.errors import NetworkError, StockShieldError
 from utils.market_data import get_ticker_bundle
 
+logger = get_logger("fundamentals")
+
 
 def _coerce(info: Dict[str, Any], key: str, default: float = 0.0) -> Any:
+    """Return ``info[key]`` or *default* when missing/None."""
     value = info.get(key, default)
     if value is None:
         return default
@@ -26,8 +30,10 @@ def get_fundamentals(symbol: str) -> Tuple[Any, ...]:
         bundle = get_ticker_bundle(symbol)
         info = bundle.get("info") or {}
     except StockShieldError:
+        logger.warning("Fundamentals falling back to empty info for %s", symbol)
         info = {}
     except Exception as exc:
+        logger.warning("Fundamentals fetch failed for %s: %s", symbol, exc)
         raise NetworkError("Unable to fetch fundamentals.") from exc
 
     market_cap = _coerce(info, "marketCap", 0) or 0

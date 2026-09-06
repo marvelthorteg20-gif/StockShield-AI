@@ -6,9 +6,11 @@ import csv
 import json
 import os
 from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
 
 
-def _flatten(payload, prefix=""):
+def _flatten(payload: Dict[str, Any], prefix: str = "") -> List[Tuple[str, Any]]:
+    """Flatten nested dicts/lists into dotted field paths."""
     rows = []
     for key, value in payload.items():
         path = f"{prefix}{key}" if not prefix else f"{prefix}.{key}"
@@ -25,13 +27,15 @@ def _flatten(payload, prefix=""):
     return rows
 
 
-def export_json(payload, path):
+def export_json(payload: Dict[str, Any], path: str) -> str:
+    """Write *payload* as pretty-printed JSON."""
     with open(path, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, default=str)
     return path
 
 
-def export_csv(payload, path):
+def export_csv(payload: Dict[str, Any], path: str) -> str:
+    """Write a two-column field/value CSV of the flattened payload."""
     rows = _flatten(payload)
     with open(path, "w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle)
@@ -40,7 +44,8 @@ def export_csv(payload, path):
     return path
 
 
-def _pdf_escape(text):
+def _pdf_escape(text: Any) -> str:
+    """Escape text for a simple Latin-1 PDF content stream."""
     return (
         str(text)
         .replace("\\", "\\\\")
@@ -51,7 +56,7 @@ def _pdf_escape(text):
     )
 
 
-def export_pdf(payload, path, title="StockShield AI Report"):
+def export_pdf(payload: Dict[str, Any], path: str, title: str = "StockShield AI Report") -> str:
     """Write a simple text PDF without third-party libraries."""
     lines = [title, "=" * 40, ""]
     for key, value in _flatten(payload):
@@ -128,7 +133,11 @@ def export_pdf(payload, path, title="StockShield AI Report"):
     return path
 
 
-def export_reports(payload, directory=None, symbol="STOCK"):
+def export_reports(
+    payload: Dict[str, Any],
+    directory: Optional[str] = None,
+    symbol: str = "STOCK",
+) -> Dict[str, str]:
     """Write PDF, CSV, and JSON reports into directory. Returns file paths."""
     if directory is None:
         import config as _config

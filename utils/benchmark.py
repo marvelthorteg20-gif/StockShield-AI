@@ -9,6 +9,7 @@ from utils.market_data import api_response_seconds
 
 
 def _rss_mb() -> Optional[float]:
+    """Best-effort process RSS in megabytes (Linux KB, macOS bytes)."""
     try:
         import resource
 
@@ -25,6 +26,7 @@ class Benchmark:
     """Stopwatch for a single analysis run."""
 
     def __init__(self) -> None:
+        """Start the runtime clock and optional tracemalloc peak tracker."""
         self._start = time.perf_counter()
         self._tracemalloc_started = False
         try:

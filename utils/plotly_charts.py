@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-DARK_LAYOUT = dict(
+DARK_LAYOUT: dict = dict(
     template="plotly_dark",
     paper_bgcolor="#0e1420",
     plot_bgcolor="#0e1420",

@@ -2,22 +2,25 @@
 
 from __future__ import annotations
 
+from typing import Any, Dict, Optional
 
-def _clamp(value, low=0, high=99):
+import pandas as pd
+
+from utils.common import safe_float as _safe
+
+
+def _clamp(value: float, low: int = 0, high: int = 99) -> int:
+    """Integer clamp used for confidence percentages."""
     return int(max(low, min(high, round(value))))
 
 
-def _safe(value, default=0.0):
-    try:
-        number = float(value)
-        if number != number:
-            return default
-        return number
-    except (TypeError, ValueError):
-        return default
-
-
-def detect_institutional_signals(history, high_52=None, low_52=None, support=None, resistance=None):
+def detect_institutional_signals(
+    history: Optional[pd.DataFrame],
+    high_52: Any = None,
+    low_52: Any = None,
+    support: Any = None,
+    resistance: Any = None,
+) -> Dict[str, Dict[str, Any]]:
     """Detect unusual volume, breakouts, 52-week proximity, and gaps."""
     empty = {
         "unusual_volume": {"detected": False, "confidence": 10},

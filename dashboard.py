@@ -11,6 +11,7 @@ from typing import Any, Tuple
 import streamlit as st
 
 import config
+from utils.app_log import get_logger
 from utils.dashboard_ui import (
     THEME_CSS,
     clamp_pct,
@@ -20,10 +21,10 @@ from utils.dashboard_ui import (
     tone_from_text,
 )
 from utils.errors import EmptyDataError, InvalidTickerError, NetworkError, StockShieldError
-from utils.market_data import validate_symbol
-from utils.pipeline import run_analysis
-from utils.plotly_charts import candlestick_figure, score_gauge
 from utils.session_log import log_event
+from utils.symbols import validate_symbol
+
+logger = get_logger("dashboard")
 
 
 def validate_dashboard_inputs(
@@ -46,14 +47,17 @@ def validate_dashboard_inputs(
 
 
 def _inject_theme() -> None:
+    """Inject dashboard CSS once per page."""
     st.markdown(THEME_CSS, unsafe_allow_html=True)
 
 
 def _cards(*html_cards: str) -> None:
+    """Render a row of metric cards."""
     st.markdown(tape(*html_cards), unsafe_allow_html=True)
 
 
 def _render_company(result: Any) -> None:
+    """Company tape: name, last, today, trend, recommendation."""
     latest = result.latest
     change_tone = tone_from_signed(result.today_percent)
     rec_tone = tone_from_text(result.recommendation)
@@ -74,6 +78,8 @@ def _render_company(result: Any) -> None:
 
 
 def _render_chart_and_score(result: Any) -> None:
+    """Draw the candlestick (lazy Plotly import) and AI score gauge."""
+    from utils.plotly_charts import candlestick_figure, score_gauge
     chart_col, score_col = st.columns((2.15, 1), gap="medium")
     with chart_col:
         with st.expander("📊  Candlestick Chart", expanded=True):
@@ -95,6 +101,7 @@ def _render_chart_and_score(result: Any) -> None:
 
 
 def _render_decision(result: Any) -> None:
+    """Decision-engine expander."""
     with st.expander("⚖️  Decision Engine", expanded=True):
         action = result.decision["action"]
         tone = tone_from_text(action)
@@ -122,6 +129,7 @@ def _render_decision(result: Any) -> None:
 
 
 def _render_technicals(result: Any) -> None:
+    """Technical indicator expander."""
     latest = result.latest
     with st.expander("📡  Technical Indicators", expanded=False):
         macd_tone = "up" if float(latest["MACD"]) >= float(latest["MACD_SIGNAL"]) else "down"
@@ -167,6 +175,7 @@ def _render_technicals(result: Any) -> None:
 
 
 def _render_fundamentals(result: Any) -> None:
+    """Fundamental expander."""
     with st.expander("🏦  Fundamentals", expanded=False):
         st.progress(
             clamp_pct(result.fundamental_score),
@@ -199,6 +208,7 @@ def _render_fundamentals(result: Any) -> None:
 
 
 def _render_news(result: Any) -> None:
+    """News expander."""
     with st.expander("📰  News", expanded=False):
         tone = tone_from_text(result.sentiment)
         _cards(metric_card("📡", "Sentiment", result.sentiment, None, tone))
@@ -207,6 +217,7 @@ def _render_news(result: Any) -> None:
 
 
 def _render_risk_size_swing(result: Any) -> None:
+    """Smart risk, position size, and swing plan columns."""
     sl = result.smart_levels
     pos = result.position
     sw = result.swing
@@ -244,11 +255,13 @@ def _render_risk_size_swing(result: Any) -> None:
 
 
 def _render_summary(result: Any) -> None:
+    """AI narrative expander."""
     with st.expander("🧾  AI Summary", expanded=True):
         st.write(result.summary)
 
 
 def _render_result(result: Any) -> None:
+    """Full dashboard body for a completed AnalysisResult."""
     _render_company(result)
     _render_chart_and_score(result)
     _render_decision(result)
@@ -263,6 +276,9 @@ def _render_result(result: Any) -> None:
 
 
 def _run_analysis_with_progress(ticker: str, capital_value: float, risk_value: float):
+    """Run the shared pipeline with a progress bar (lazy pipeline import)."""
+    from utils.pipeline import run_analysis
+
     bar = st.progress(12, text="Connecting to market data…")
     try:
         bar.progress(35, text="Fetching quotes, news, and fundamentals…")
@@ -325,6 +341,7 @@ def main() -> None:
             st.error(str(exc))
             return
         except Exception as exc:
+            logger.exception("Unexpected dashboard error for %s", symbol or "UNKNOWN")
             log_event(str(symbol or "UNKNOWN"), errors=[repr(exc)], event="dashboard_error")
             st.error("Unexpected error. See logs/ for details.")
             return

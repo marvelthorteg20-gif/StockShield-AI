@@ -115,7 +115,7 @@ class AnalysisResult:
 
 def run_analysis(
     symbol: str,
-    capital: float = 10000.0,
+    capital: float = config.DEFAULT_CAPITAL,
     risk_pct: Optional[float] = None,
 ) -> AnalysisResult:
     """Run the full StockShield stack for *symbol*.
@@ -125,7 +125,7 @@ def run_analysis(
     """
     ticker = str(symbol).strip().upper()
     risk = float(config.RISK_PERCENT if risk_pct is None else risk_pct)
-    capital_value = parse_capital(capital, default=10000.0)
+    capital_value = parse_capital(capital, default=config.DEFAULT_CAPITAL)
 
     (
         history,

@@ -5,11 +5,13 @@ from __future__ import annotations
 import pandas as pd
 import mplfinance as mpf
 
+import config
+
 
 def plot_stock_chart(history: pd.DataFrame, company_name: str) -> None:
     """Plot OHLCV with SMA20 and EMA20 overlay (unchanged visual)."""
     data = history[["Open", "High", "Low", "Close", "Volume"]].copy()
-    mav = (20,)
+    mav = (config.CHART_MAV,)
     ema20 = mpf.make_addplot(
         history["EMA20"],
         color="green",

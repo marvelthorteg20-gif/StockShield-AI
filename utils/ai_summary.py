@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+from typing import Any, Dict, Optional
 
-def _text(value):
+
+def _text(value: Any) -> str:
+    """String form of *value* (empty for None)."""
     return str(value or "")
 
 
-def _institutional_tone(signals):
+def _institutional_tone(signals: Optional[Dict[str, Dict[str, Any]]]) -> str:
+    """One sentence describing institutional flags."""
     detected = [name for name, payload in (signals or {}).items() if payload.get("detected")]
     if not detected:
         return "Institutional participation is currently average."
@@ -19,20 +23,20 @@ def _institutional_tone(signals):
 
 
 def generate_ai_summary(
-    company_name,
-    trend,
-    rsi,
-    macd_status,
-    fundamental_score,
-    atr,
-    adx,
-    risk_level,
-    sentiment,
-    star_label,
-    alignment,
-    institutional_signals,
-    volatility_level=None,
-):
+    company_name: Any,
+    trend: Any,
+    rsi: Any,
+    macd_status: Any,
+    fundamental_score: Any,
+    atr: Any,
+    adx: Any,
+    risk_level: Any,
+    sentiment: Any,
+    star_label: Any,
+    alignment: Any,
+    institutional_signals: Any,
+    volatility_level: Any = None,
+) -> str:
     """Return a ChatGPT-style professional market paragraph."""
     name = company_name or "The stock"
     rsi_value = float(rsi) if rsi == rsi else 50.0

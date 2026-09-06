@@ -42,6 +42,7 @@ def header(title: str, width: int = 45) -> None:
 
 
 def rule(width: int = 45, char: str = "-") -> None:
+    """Print a horizontal rule (same character count as the classic CLI)."""
     print(paint(char * width, DIM))
 
 
@@ -56,6 +57,7 @@ def spinner(message: str = "Loading") -> Iterator[None]:
     frames = "|/-\\"
 
     def _run() -> None:
+        """Write spinner frames until *stop* is set."""
         index = 0
         while not stop.is_set():
             frame = frames[index % 4]

@@ -10,9 +10,12 @@ from utils.chart import plot_stock_chart
 from utils.cli import BOLD, CYAN, RED, paint, spinner
 from utils.errors import StockShieldError
 from utils.export_report import export_reports
+from utils.app_log import get_logger
 from utils.pipeline import INSTITUTIONAL_LABELS, run_analysis
 from utils.position_sizing import parse_capital
 from utils.session_log import log_event
+
+logger = get_logger("cli")
 
 
 def main() -> int:
@@ -237,6 +240,7 @@ def main() -> int:
             plot_stock_chart(history, company_name)
         except Exception as exc:
             log_event(ticker, errors=[f"chart: {exc}"], event="chart_error")
+            logger.warning("Chart unavailable: %s", exc)
             print("Chart unavailable in this environment.")
 
         stats = bench.snapshot()
@@ -265,6 +269,7 @@ def main() -> int:
         return 130
     except Exception as exc:
         print(paint("\n❌ Unexpected error. See logs/ for details.", RED))
+        logger.exception("Unexpected CLI failure for %s", ticker or "UNKNOWN")
         log_event(ticker or "UNKNOWN", errors=[repr(exc)], event="error")
         return 1
 

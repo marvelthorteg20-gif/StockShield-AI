@@ -29,6 +29,7 @@ IndicatorResult = Tuple[Any, ...]
 
 
 def _rating_from_score(score: int) -> str:
+    """Map an AI score to the historical star-rating string."""
     if score >= 90:
         return "★★★★★"
     if score >= 80:
@@ -41,6 +42,7 @@ def _rating_from_score(score: int) -> str:
 
 
 def _confidence_from_score(score: int) -> str:
+    """Map an AI score to HIGH / MEDIUM / LOW confidence labels."""
     if score >= 80:
         return "🟢 HIGH"
     if score >= 60:
@@ -49,7 +51,8 @@ def _confidence_from_score(score: int) -> str:
 
 
 def _risk_from_score(score: int, rsi: float, volatility_level: str) -> str:
-    if rsi > 70 or rsi < 30 or volatility_level == "🔴 High":
+    """Derive the risk badge from RSI extremes, volatility, and confidence."""
+    if rsi > config.RSI_OVERBOUGHT or rsi < config.RSI_OVERSOLD or volatility_level == "🔴 High":
         return "🔴 HIGH"
     if score >= 80 and volatility_level == "🟢 Low":
         return "🟢 LOW"
@@ -59,16 +62,16 @@ def _risk_from_score(score: int, rsi: float, volatility_level: str) -> str:
 
 
 def refine_ai_score(
-    trend,
-    rsi,
-    macd_status,
-    bb_signal,
-    volume_status,
-    volatility_level,
-    adx_strength,
-    sentiment,
-    fundamental_score,
-):
+    trend: str,
+    rsi: float,
+    macd_status: str,
+    bb_signal: str,
+    volume_status: str,
+    volatility_level: str,
+    adx_strength: str,
+    sentiment: str,
+    fundamental_score: int,
+) -> Tuple[int, str, str, str]:
     """Blend technicals with news and fundamentals; same return tuple as before."""
     score, _ = compute_ai_score(
         trend=trend,
@@ -103,8 +106,8 @@ def calculate_indicators(symbol: str) -> IndicatorResult:
     if history.empty:
         raise EmptyDataError("No stock data found.")
 
-    history["SMA20"] = history["Close"].rolling(20).mean()
-    history["EMA20"] = history["Close"].ewm(span=20, adjust=False).mean()
+    history["SMA20"] = history["Close"].rolling(config.SMA_WINDOW).mean()
+    history["EMA20"] = history["Close"].ewm(span=config.EMA_WINDOW, adjust=False).mean()
 
     history["RSI"] = RSIIndicator(
         close=history["Close"],
@@ -122,15 +125,15 @@ def calculate_indicators(symbol: str) -> IndicatorResult:
 
     bb = BollingerBands(
         close=history["Close"],
-        window=20,
-        window_dev=2,
+        window=config.BB_WINDOW,
+        window_dev=config.BB_STD,
     )
 
     history["BB_UPPER"] = bb.bollinger_hband()
     history["BB_LOWER"] = bb.bollinger_lband()
     history["BB_MIDDLE"] = bb.bollinger_mavg()
 
-    history["VOL_AVG20"] = history["Volume"].rolling(20).mean()
+    history["VOL_AVG20"] = history["Volume"].rolling(config.VOLUME_AVG_WINDOW).mean()
 
     atr_indicator = AverageTrueRange(
         high=history["High"],
@@ -144,7 +147,7 @@ def calculate_indicators(symbol: str) -> IndicatorResult:
         high=history["High"],
         low=history["Low"],
         close=history["Close"],
-        window=14,
+        window=config.ADX_WINDOW,
     )
     history["ADX"] = adx_indicator.adx()
 
@@ -192,8 +195,8 @@ def calculate_indicators(symbol: str) -> IndicatorResult:
     today_change = latest["Close"] - latest["Open"]
     today_percent = (today_change / latest["Open"]) * 100
 
-    support = history["Low"].tail(20).min()
-    resistance = history["High"].tail(20).max()
+    support = history["Low"].tail(config.SWING_LOOKBACK).min()
+    resistance = history["High"].tail(config.SWING_LOOKBACK).max()
 
     high_52 = history["High"].max()
     low_52 = history["Low"].min()
@@ -223,7 +226,7 @@ def calculate_indicators(symbol: str) -> IndicatorResult:
     risk = _risk_from_score(score, rsi, volatility_level)
 
     if trend == "🟢 STRONG BULLISH":
-        if rsi > 70:
+        if rsi > config.RSI_OVERBOUGHT:
             recommendation = "🟡 HOLD"
             explanation = (
                 "• Trend is bullish.\n"
@@ -253,7 +256,7 @@ def calculate_indicators(symbol: str) -> IndicatorResult:
         )
 
     elif trend == "🔴 STRONG BEARISH":
-        if rsi < 30:
+        if rsi < config.RSI_OVERSOLD:
             recommendation = "🟡 HOLD"
             explanation = (
                 "• Trend is bearish.\n"

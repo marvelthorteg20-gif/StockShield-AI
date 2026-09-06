@@ -2,6 +2,10 @@
 
 from __future__ import annotations
 
+from typing import Dict, Optional
+
+import pandas as pd
+
 ALIGNMENT_WEIGHTS = {
     "Strong Bullish": 1.0,
     "Bullish": 0.85,
@@ -27,13 +31,15 @@ THRESHOLDS = {
 }
 
 
-def _safe_close(history):
+def _safe_close(history: Optional[pd.DataFrame]) -> Optional[float]:
+    """Latest close, or None when history is empty."""
     if history is None or len(history) == 0:
         return None
     return float(history["Close"].iloc[-1])
 
 
-def _window_return(series):
+def _window_return(series: pd.Series) -> float:
+    """Percent return from first to last close in *series*."""
     start = float(series.iloc[0])
     end = float(series.iloc[-1])
     if start == 0:
@@ -41,7 +47,13 @@ def _window_return(series):
     return ((end - start) / start) * 100.0
 
 
-def classify_timeframe(return_pct, close, sma, bull_th, strong_th):
+def classify_timeframe(
+    return_pct: float,
+    close: float,
+    sma: Optional[float],
+    bull_th: float,
+    strong_th: float,
+) -> str:
     """Map return and SMA bias to a professional timeframe label."""
     above = sma is not None and close > sma
     below = sma is not None and close < sma
@@ -61,7 +73,7 @@ def classify_timeframe(return_pct, close, sma, bull_th, strong_th):
     return "Neutral"
 
 
-def analyze_timeframes(history):
+def analyze_timeframes(history: Optional[pd.DataFrame]) -> Dict[str, object]:
     """Score 1D, 1W, 1M, 3M, and 1Y trends and overall alignment."""
     labels = {}
     close = _safe_close(history)

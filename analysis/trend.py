@@ -1,5 +1,12 @@
-def analyze_trend(history):
+"""Simple SMA/EMA trend classifier used by older helper modules."""
 
+from __future__ import annotations
+
+import pandas as pd
+
+
+def analyze_trend(history: pd.DataFrame) -> str:
+    """Score price vs SMA20/SMA50/EMA20 into a four-state trend label."""
     price = history["Close"].iloc[-1]
     sma20 = history["SMA20"].iloc[-1]
     sma50 = history["SMA50"].iloc[-1]
