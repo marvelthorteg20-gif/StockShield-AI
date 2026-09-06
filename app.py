@@ -2,6 +2,7 @@ from utils.indicators import calculate_indicators, refine_ai_score
 from utils.chart import plot_stock_chart
 from utils.news import get_news_sentiment
 from utils.fundamentals import get_fundamentals
+from utils.decision_engine import generate_decision
 
 print("=" * 45)
 print("        📈 STOCKSHIELD AI")
@@ -120,9 +121,6 @@ if patterns:
 else:
     print("• No pattern detected")
 
-print("\n📰 Latest News")
-print("-" * 45)
-
 print("\n📑 Fundamental Analysis")
 print("---------------------------------------------")
 print(f"💼 Market Cap       : ${market_cap:,}")
@@ -133,6 +131,39 @@ print(f"📈 Beta             : {beta}")
 print(f"🏢 Revenue          : ${revenue:,}")
 print(f"📊 Profit Margin    : {profit_margin:.2%}")
 print(f"🧠 Fundamental Score: {fundamental_score}/100")
+
+decision = generate_decision(
+    trend=trend,
+    rsi=rsi,
+    macd_status=macd_status,
+    bb_signal=bb_signal,
+    atr=atr,
+    adx=adx,
+    volume_status=volume_status,
+    news_sentiment=sentiment,
+    fundamental_score=fundamental_score,
+    risk_level=risk,
+    candlestick_pattern=patterns,
+    risk_reward=smart_levels["risk_reward"],
+)
+
+print()
+print("=" * 34)
+print("🧠 AI DECISION ENGINE")
+print("=" * 34)
+print()
+print(f"Action           : {decision['action']}")
+print(f"Confidence       : {decision['confidence']}%")
+print(f"Probability      : {decision['probability']}%")
+print(f"Holding Period   : {decision['holding_period']}")
+print(f"Risk Reward      : {decision['risk_reward_rating']}")
+print()
+print("Reasons")
+for reason in decision["reasons"]:
+    print(f"• {reason}")
+
+print("\n📰 Latest News")
+print("-" * 45)
 for item in news:
     print(item)
 
