@@ -7,7 +7,7 @@ existing tests remain compatible. Yahoo fetches go through
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import pandas as pd
 from ta.momentum import RSIIndicator

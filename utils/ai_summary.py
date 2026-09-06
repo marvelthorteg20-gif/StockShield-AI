@@ -37,8 +37,8 @@ def generate_ai_summary(
     name = company_name or "The stock"
     rsi_value = float(rsi) if rsi == rsi else 50.0
     fund = float(fundamental_score) if fundamental_score == fundamental_score else 50.0
-    atr_value = float(atr) if atr == atr else 0.0
-    adx_value = float(adx) if adx == adx else 0.0
+    _ = float(atr) if atr == atr else 0.0
+    _ = float(adx) if adx == adx else 0.0
 
     trend_l = _text(trend).lower()
     if "bullish" in trend_l:
@@ -76,10 +76,13 @@ def generate_ai_summary(
 
     vol_l = _text(volatility_level).lower()
     risk_word = _text(risk_level).replace("HIGH", "high").replace("LOW", "low").replace("MEDIUM", "moderate")
+    risk_tail = risk_word.split()[-1] if risk_word else "moderate"
     if "HIGH" in _text(risk_level) or "high" in vol_l:
-        risk_line = f"Risk remains {risk_word.split()[-1] if risk_word else 'moderate'} because ATR has increased during recent sessions"
+        risk_line = (
+            f"Risk remains {risk_tail} because ATR has increased during recent sessions"
+        )
     else:
-        risk_line = f"Risk remains {risk_word.split()[-1] if risk_word else 'moderate'}"
+        risk_line = f"Risk remains {risk_tail}"
 
     if "BUY" in _text(star_label) and "SELL" not in _text(star_label):
         close_line = "Overall probability favors continuation toward resistance."

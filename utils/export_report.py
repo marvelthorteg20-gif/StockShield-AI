@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def _flatten(payload, prefix=""):
@@ -135,7 +135,7 @@ def export_reports(payload, directory=None, symbol="STOCK"):
 
         directory = _config.EXPORT_FOLDER
     os.makedirs(directory, exist_ok=True)
-    stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     base = os.path.join(directory, f"{symbol}_{stamp}")
     paths = {
         "json": export_json(payload, base + ".json"),

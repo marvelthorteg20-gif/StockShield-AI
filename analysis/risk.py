@@ -28,9 +28,7 @@ def calculate_smart_levels(entry, atr, support, resistance):
 
     atr_value = 0.0 if atr is None or atr != atr else max(float(atr), 0.0)
     support_value = float(support) if support is not None and support == support else entry
-    resistance_value = (
-        float(resistance) if resistance is not None and resistance == resistance else entry
-    )
+    _ = float(resistance) if resistance is not None and resistance == resistance else entry
 
     atr_stop = entry - (1.5 * atr_value if atr_value > 0 else entry * 0.02)
     support_stop = support_value - (0.25 * atr_value)

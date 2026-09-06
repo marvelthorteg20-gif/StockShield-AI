@@ -67,7 +67,14 @@ def calculate_sr_engine(history, lookback=60):
     levels.extend(_fibonacci_levels(swing_high, swing_low))
     levels.append({"name": "Dynamic Support (EMA20)", "price": ema20, "kind": "Support", "family": "Dynamic"})
     levels.append({"name": "Dynamic Support (SMA20)", "price": sma20, "kind": "Support", "family": "Dynamic"})
-    levels.append({"name": "Dynamic Resistance (Swing High)", "price": recent_high, "kind": "Resistance", "family": "Dynamic"})
+    levels.append(
+        {
+            "name": "Dynamic Resistance (Swing High)",
+            "price": recent_high,
+            "kind": "Resistance",
+            "family": "Dynamic",
+        }
+    )
     levels.append({"name": "Dynamic Support (Swing Low)", "price": recent_low, "kind": "Support", "family": "Dynamic"})
 
     clustered = _cluster_and_rank(levels, close)

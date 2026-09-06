@@ -5,22 +5,13 @@ from __future__ import annotations
 import sys
 
 import config
-from utils.indicators import calculate_indicators, refine_ai_score
-from utils.chart import plot_stock_chart
-from utils.news import get_news_sentiment
-from utils.fundamentals import get_fundamentals
-from utils.decision_engine import generate_decision
-from utils.multi_timeframe import analyze_timeframes
-from utils.institutional import detect_institutional_signals
-from utils.levels import calculate_sr_engine
-from utils.star_decision import rate_star_decision
-from utils.swing_trade import build_swing_plan
-from utils.position_sizing import calculate_position, parse_capital
-from utils.ai_summary import generate_ai_summary
-from utils.export_report import export_reports
-from utils.errors import StockShieldError
-from utils.cli import BOLD, CYAN, RED, paint, spinner
 from utils.benchmark import Benchmark
+from utils.chart import plot_stock_chart
+from utils.cli import BOLD, CYAN, RED, paint, spinner
+from utils.errors import StockShieldError
+from utils.export_report import export_reports
+from utils.pipeline import INSTITUTIONAL_LABELS, run_analysis
+from utils.position_sizing import parse_capital
 from utils.session_log import log_event
 
 
@@ -37,61 +28,55 @@ def main() -> int:
         capital = parse_capital(input("Enter Capital (default $10,000): "))
 
         with spinner("Fetching market data"):
-            (
-                history,
-                trend,
-                recommendation,
-                explanation,
-                company_name,
-                sector,
-                macd_status,
-                score,
-                confidence,
-                rating,
-                bb_signal,
-                volume_status,
-                risk,
-                support,
-                resistance,
-                high_52,
-                low_52,
-                today_change,
-                today_percent,
-                atr,
-                volatility_level,
-                adx,
-                adx_strength,
-                patterns,
-                smart_levels,
-            ) = calculate_indicators(ticker)
+            result = run_analysis(ticker, capital=capital)
 
-            (
-                market_cap,
-                pe_ratio,
-                eps,
-                dividend,
-                beta,
-                revenue,
-                profit_margin,
-                fundamental_score,
-            ) = get_fundamentals(ticker)
-
-            news, sentiment = get_news_sentiment(ticker)
-
-        score, confidence, rating, risk = refine_ai_score(
-            trend=trend,
-            rsi=history.iloc[-1]["RSI"],
-            macd_status=macd_status,
-            bb_signal=bb_signal,
-            volume_status=volume_status,
-            volatility_level=volatility_level,
-            adx_strength=adx_strength,
-            sentiment=sentiment,
-            fundamental_score=fundamental_score,
-        )
-
-        latest = history.iloc[-1]
-        rsi = latest["RSI"]
+        latest = result.latest
+        rsi = result.rsi
+        score = result.score
+        confidence = result.confidence
+        rating = result.rating
+        risk = result.risk
+        atr = result.atr
+        adx = result.adx
+        patterns = result.patterns
+        smart_levels = result.smart_levels
+        decision = result.decision
+        news = result.news
+        sentiment = result.sentiment
+        explanation = result.explanation
+        timeframes = result.timeframes
+        inst_signals = result.institutional
+        sr_levels = result.sr_levels
+        star = result.star
+        swing = result.swing
+        position = result.position
+        summary = result.summary
+        company_name = result.company_name
+        sector = result.sector
+        trend = result.trend
+        recommendation = result.recommendation
+        macd_status = result.macd_status
+        bb_signal = result.bb_signal
+        volume_status = result.volume_status
+        volatility_level = result.volatility_level
+        adx_strength = result.adx_strength
+        support = result.support
+        resistance = result.resistance
+        high_52 = result.high_52
+        low_52 = result.low_52
+        today_change = result.today_change
+        today_percent = result.today_percent
+        market_cap = result.market_cap
+        pe_ratio = result.pe_ratio
+        eps = result.eps
+        dividend = result.dividend
+        beta = result.beta
+        revenue = result.revenue
+        profit_margin = result.profit_margin
+        fundamental_score = result.fundamental_score
+        history = result.history
+        target_price = result.target_price
+        upside = result.upside
 
         print("\n📊 Stock Analysis")
         print("-" * 45)
@@ -121,8 +106,6 @@ def main() -> int:
         print(f"🔴 Resistance   : ${resistance:.2f}")
         print(f"📈 52W High     : ${high_52:.2f}")
         print(f"📉 52W Low      : ${low_52:.2f}")
-        target_price = resistance
-        upside = ((target_price - latest["Close"]) / latest["Close"]) * 100
 
         print(f"🎯 Target Price : ${target_price:.2f}")
         print(f"📈 Upside       : {upside:+.2f}%")
@@ -157,21 +140,6 @@ def main() -> int:
         print(f"📊 Profit Margin    : {profit_margin:.2%}")
         print(f"🧠 Fundamental Score: {fundamental_score}/100")
 
-        decision = generate_decision(
-            trend=trend,
-            rsi=rsi,
-            macd_status=macd_status,
-            bb_signal=bb_signal,
-            atr=atr,
-            adx=adx,
-            volume_status=volume_status,
-            news_sentiment=sentiment,
-            fundamental_score=fundamental_score,
-            risk_level=risk,
-            candlestick_pattern=patterns,
-            risk_reward=smart_levels["risk_reward"],
-        )
-
         print()
         print("=" * 34)
         print("🧠 AI DECISION ENGINE")
@@ -198,7 +166,6 @@ def main() -> int:
         print("\n📝 Explanation:")
         print(explanation)
 
-        timeframes = analyze_timeframes(history)
         print("\n📡 Multi-Timeframe Analysis")
         print("-" * 45)
         print(f"1D  : {timeframes['1D']}")
@@ -209,30 +176,13 @@ def main() -> int:
         print()
         print(f"Overall Trend Alignment: {timeframes['alignment']}%")
 
-        inst_signals = detect_institutional_signals(
-            history,
-            high_52=high_52,
-            low_52=low_52,
-            support=support,
-            resistance=resistance,
-        )
         print("\n🏛️ Institutional Signals")
         print("-" * 45)
-        signal_labels = (
-            ("unusual_volume", "Unusual Volume"),
-            ("breakout", "Breakout"),
-            ("breakdown", "Breakdown"),
-            ("near_52w_high", "Near 52 Week High"),
-            ("near_52w_low", "Near 52 Week Low"),
-            ("gap_up", "Gap Up"),
-            ("gap_down", "Gap Down"),
-        )
-        for key, label in signal_labels:
+        for key, label in INSTITUTIONAL_LABELS:
             payload = inst_signals[key]
             mark = "✔ Yes" if payload["detected"] else "✖ No"
             print(f"{label:<20}: {mark:<8} (Confidence {payload['confidence']}%)")
 
-        sr_levels = calculate_sr_engine(history)
         print("\n📐 Support & Resistance Engine")
         print("-" * 45)
         if sr_levels:
@@ -244,7 +194,6 @@ def main() -> int:
         else:
             print("• Levels unavailable")
 
-        star = rate_star_decision(decision)
         print("\n⭐ Trade Rating")
         print("-" * 45)
         print(star["display"])
@@ -252,14 +201,6 @@ def main() -> int:
         for reason in star["why"]:
             print(f"• {reason}")
 
-        swing = build_swing_plan(
-            entry=smart_levels["entry"],
-            stop_loss=smart_levels["stop_loss"],
-            target1=smart_levels["target1"],
-            target2=smart_levels["target2"],
-            atr=atr,
-            probability=decision["probability"],
-        )
         print("\n📈 Swing Trading")
         print("-" * 45)
         print(f"Entry Price           : ${swing['entry']:.2f}")
@@ -270,12 +211,6 @@ def main() -> int:
         print(f"Expected Holding Days : {swing['holding_days']}")
         print(f"Probability of Success: {swing['probability']}%")
 
-        position = calculate_position(
-            capital=capital,
-            entry=swing["entry"],
-            stop_loss=swing["stop_loss"],
-            risk_pct=config.RISK_PERCENT,
-        )
         print("\n💼 Position Sizing")
         print("-" * 45)
         print(f"Capital               : ${position['capital']:,.2f}")
@@ -284,47 +219,12 @@ def main() -> int:
         print(f"Suggested Quantity    : {position['quantity']}")
         print(f"Portfolio Allocation %: {position['allocation_pct']:.2f}%")
 
-        summary = generate_ai_summary(
-            company_name=company_name,
-            trend=trend,
-            rsi=rsi,
-            macd_status=macd_status,
-            fundamental_score=fundamental_score,
-            atr=atr,
-            adx=adx,
-            risk_level=risk,
-            sentiment=sentiment,
-            star_label=star["label"],
-            alignment=timeframes["alignment"],
-            institutional_signals=inst_signals,
-            volatility_level=volatility_level,
-        )
         print("\n🧾 AI Summary")
         print("-" * 45)
         print(summary)
 
-        report_payload = {
-            "symbol": ticker,
-            "company": company_name,
-            "price": float(latest["Close"]),
-            "trend": trend,
-            "rsi": float(rsi),
-            "macd_status": macd_status,
-            "ai_score": score,
-            "recommendation": recommendation,
-            "decision": decision,
-            "star_rating": star["display"],
-            "timeframes": timeframes,
-            "institutional": inst_signals,
-            "support_resistance": sr_levels,
-            "swing": swing,
-            "position": position,
-            "summary": summary,
-            "news_sentiment": sentiment,
-            "fundamental_score": fundamental_score,
-        }
         export_paths = export_reports(
-            report_payload, config.EXPORT_FOLDER, symbol=ticker
+            result.export_payload(), config.EXPORT_FOLDER, symbol=ticker
         )
         print("\n📁 Exported Reports")
         print("-" * 45)

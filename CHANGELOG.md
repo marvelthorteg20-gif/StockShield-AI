@@ -2,6 +2,18 @@
 
 All notable changes to StockShield AI are documented in this file.
 
+## [0.5.0] - 2026-09-06
+
+### Added
+- Dark Streamlit dashboard (`streamlit_app.py`) over the shared analysis pipeline.
+- `utils/pipeline.py` so CLI and UI run the same engines.
+- GitHub Actions CI (`pytest` + `flake8`).
+- Plotly candlestick + AI score gauge helpers.
+
+### Changed
+- `requirements.txt` lists direct dependencies only.
+- README documents CLI and dashboard usage.
+
 ## [0.4.0] - 2026-09-06
 
 ### Added
