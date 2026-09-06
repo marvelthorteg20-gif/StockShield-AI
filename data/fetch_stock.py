@@ -1,11 +1,15 @@
-import yfinance as yf
+"""Low-level Yahoo history helper (cached)."""
 
-def get_stock_data(symbol):
-    stock = yf.Ticker(symbol)
+from __future__ import annotations
 
-    info = stock.info
+from typing import Any, Dict, Tuple
 
-    # Get one year of historical data
-    history = stock.history(period="1y")
+import pandas as pd
 
-    return info, history
+from utils.market_data import get_ticker_bundle
+
+
+def get_stock_data(symbol: str) -> Tuple[Dict[str, Any], pd.DataFrame]:
+    """Return Yahoo ``info`` and one year of history."""
+    bundle = get_ticker_bundle(symbol)
+    return bundle["info"], bundle["history"]

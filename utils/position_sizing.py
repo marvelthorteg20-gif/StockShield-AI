@@ -19,8 +19,12 @@ def parse_capital(raw, default=10000.0):
     return value
 
 
-def calculate_position(capital, entry, stop_loss, risk_pct=2.0):
+def calculate_position(capital, entry, stop_loss, risk_pct=None):
     """Size a long position so a stop-out loses about risk_pct of capital."""
+    if risk_pct is None:
+        import config
+
+        risk_pct = config.RISK_PERCENT
     capital = float(capital)
     entry = float(entry)
     stop = float(stop_loss)

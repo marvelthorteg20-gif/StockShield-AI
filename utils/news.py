@@ -1,27 +1,40 @@
+"""News sentiment via Alpha Vantage (return values unchanged)."""
+
+from __future__ import annotations
+
+import time
+from typing import List, Tuple
+
 import requests
 
-API_KEY = "9S8DLJBP2UN5RIEW"
+import config
+from utils.market_data import add_news_timing
 
 
-def get_news_sentiment(symbol):
+def get_news_sentiment(symbol: str) -> Tuple[List[str], str]:
+    """Fetch headlines and an overall sentiment label.
+
+    Rate-limit, invalid-symbol, and transport failures keep the same
+    fallback strings the CLI already displays.
+    """
     url = (
         "https://www.alphavantage.co/query"
         f"?function=NEWS_SENTIMENT"
         f"&tickers={symbol}"
         f"&limit=5"
-        f"&apikey={API_KEY}"
+        f"&apikey={config.NEWS_API_KEY}"
     )
 
     try:
-        response = requests.get(url, timeout=10)
+        started = time.perf_counter()
+        response = requests.get(url, timeout=config.NEWS_TIMEOUT_SECONDS)
+        add_news_timing(time.perf_counter() - started)
         response.raise_for_status()
         data = response.json()
 
-        # API limit reached
         if "Information" in data:
             return ["⚪ API rate limit reached. Please try again later."], "⚪ UNKNOWN"
 
-        # Invalid symbol
         if "Error Message" in data:
             return ["⚪ Invalid stock symbol."], "⚪ UNKNOWN"
 

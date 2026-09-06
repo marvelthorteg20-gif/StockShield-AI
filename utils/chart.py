@@ -1,20 +1,20 @@
+"""Candlestick chart rendering via mplfinance."""
+
+from __future__ import annotations
+
+import pandas as pd
 import mplfinance as mpf
 
 
-def plot_stock_chart(history, company_name):
-    # Keep only required columns
+def plot_stock_chart(history: pd.DataFrame, company_name: str) -> None:
+    """Plot OHLCV with SMA20 and EMA20 overlay (unchanged visual)."""
     data = history[["Open", "High", "Low", "Close", "Volume"]].copy()
-
-    # Moving averages to display
     mav = (20,)
-
-    # EMA20 overlay
     ema20 = mpf.make_addplot(
         history["EMA20"],
         color="green",
-        width=1
+        width=1,
     )
-
     mpf.plot(
         data,
         type="candle",
@@ -25,5 +25,5 @@ def plot_stock_chart(history, company_name):
         mav=mav,
         addplot=ema20,
         figsize=(12, 8),
-        tight_layout=True
+        tight_layout=True,
     )

@@ -1,8 +1,20 @@
-import yfinance as yf
-from ta.momentum import RSIIndicator
-from ta.trend import MACD, ADXIndicator
-from ta.volatility import BollingerBands, AverageTrueRange
+"""Technical indicator pipeline for StockShield AI.
 
+Public functions keep their historical return shapes so ``app.py`` and
+existing tests remain compatible. Yahoo fetches go through
+``utils.market_data`` so fundamentals reuse the same payload.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Tuple
+
+import pandas as pd
+from ta.momentum import RSIIndicator
+from ta.trend import ADXIndicator, MACD
+from ta.volatility import AverageTrueRange, BollingerBands
+
+import config
 from analysis.ai_score import compute_ai_score
 from analysis.patterns import detect_candlestick_patterns
 from analysis.risk import (
@@ -10,9 +22,13 @@ from analysis.risk import (
     classify_adx_strength,
     classify_volatility,
 )
+from utils.errors import EmptyDataError
+from utils.market_data import get_ticker_bundle
+
+IndicatorResult = Tuple[Any, ...]
 
 
-def _rating_from_score(score):
+def _rating_from_score(score: int) -> str:
     if score >= 90:
         return "★★★★★"
     if score >= 80:
@@ -24,7 +40,7 @@ def _rating_from_score(score):
     return "★☆☆☆☆"
 
 
-def _confidence_from_score(score):
+def _confidence_from_score(score: int) -> str:
     if score >= 80:
         return "🟢 HIGH"
     if score >= 60:
@@ -32,7 +48,7 @@ def _confidence_from_score(score):
     return "🔴 LOW"
 
 
-def _risk_from_score(score, rsi, volatility_level):
+def _risk_from_score(score: int, rsi: float, volatility_level: str) -> str:
     if rsi > 70 or rsi < 30 or volatility_level == "🔴 High":
         return "🔴 HIGH"
     if score >= 80 and volatility_level == "🟢 Low":
@@ -53,6 +69,7 @@ def refine_ai_score(
     sentiment,
     fundamental_score,
 ):
+    """Blend technicals with news and fundamentals; same return tuple as before."""
     score, _ = compute_ai_score(
         trend=trend,
         rsi=rsi,
@@ -70,37 +87,43 @@ def refine_ai_score(
     return score, confidence, rating, risk
 
 
-def calculate_indicators(symbol):
-    stock = yf.Ticker(symbol)
-    info = stock.info
+def calculate_indicators(symbol: str) -> IndicatorResult:
+    """Fetch (cached) Yahoo data and compute the full indicator snapshot.
+
+    Raises:
+        InvalidTickerError, EmptyDataError, NetworkError
+    """
+    bundle = get_ticker_bundle(symbol)
+    info: Dict[str, Any] = bundle["info"] or {}
+    history: pd.DataFrame = bundle["history"]
 
     company_name = info.get("longName", symbol)
     sector = info.get("sector", "Unknown")
 
-    history = stock.history(period="1y")
-
     if history.empty:
-        raise Exception("No stock data found.")
+        raise EmptyDataError("No stock data found.")
 
-    # =========================
-    # Indicators
-    # =========================
     history["SMA20"] = history["Close"].rolling(20).mean()
     history["EMA20"] = history["Close"].ewm(span=20, adjust=False).mean()
 
     history["RSI"] = RSIIndicator(
         close=history["Close"],
-        window=14
+        window=config.RSI_PERIOD,
     ).rsi()
 
-    macd = MACD(history["Close"])
+    macd = MACD(
+        history["Close"],
+        window_slow=config.MACD_SLOW,
+        window_fast=config.MACD_FAST,
+        window_sign=config.MACD_SIGNAL,
+    )
     history["MACD"] = macd.macd()
     history["MACD_SIGNAL"] = macd.macd_signal()
 
     bb = BollingerBands(
         close=history["Close"],
         window=20,
-        window_dev=2
+        window_dev=2,
     )
 
     history["BB_UPPER"] = bb.bollinger_hband()
@@ -113,7 +136,7 @@ def calculate_indicators(symbol):
         high=history["High"],
         low=history["Low"],
         close=history["Close"],
-        window=14,
+        window=config.ATR_LENGTH,
     )
     history["ATR"] = atr_indicator.average_true_range()
 
@@ -131,9 +154,6 @@ def calculate_indicators(symbol):
     atr = latest["ATR"]
     adx = latest["ADX"]
 
-    # =========================
-    # Trend
-    # =========================
     if latest["Close"] > latest["EMA20"] > latest["SMA20"]:
         trend = "🟢 STRONG BULLISH"
 
@@ -146,9 +166,6 @@ def calculate_indicators(symbol):
     else:
         trend = "🟡 NEUTRAL"
 
-    # =========================
-    # MACD Status
-    # =========================
     if latest["MACD"] > latest["MACD_SIGNAL"]:
         macd_status = "🟢 Bullish Crossover"
 
@@ -158,9 +175,6 @@ def calculate_indicators(symbol):
     else:
         macd_status = "🟡 Neutral"
 
-    # =========================
-    # Bollinger Signal
-    # =========================
     if latest["Close"] > latest["BB_UPPER"]:
         bb_signal = "🔴 Price Above Upper Band (Overbought)"
 
@@ -170,17 +184,11 @@ def calculate_indicators(symbol):
     else:
         bb_signal = "🟡 Price Inside Bands"
 
-    # =========================
-    # Volume
-    # =========================
     if latest["Volume"] > latest["VOL_AVG20"]:
         volume_status = "🟢 High Volume"
     else:
         volume_status = "🟡 Low Volume"
 
-    # =========================
-    # Price Change
-    # =========================
     today_change = latest["Close"] - latest["Open"]
     today_percent = (today_change / latest["Open"]) * 100
 
@@ -200,9 +208,6 @@ def calculate_indicators(symbol):
         resistance=float(resistance),
     )
 
-    # =========================
-    # AI Score (technicals; news + fundamentals applied later)
-    # =========================
     score, _ = compute_ai_score(
         trend=trend,
         rsi=rsi,
@@ -213,24 +218,10 @@ def calculate_indicators(symbol):
         adx_strength=adx_strength,
     )
 
-    # =========================
-    # Confidence
-    # =========================
     confidence = _confidence_from_score(score)
-
-    # =========================
-    # Rating
-    # =========================
     rating = _rating_from_score(score)
-
-    # =========================
-    # Risk
-    # =========================
     risk = _risk_from_score(score, rsi, volatility_level)
 
-    # =========================
-    # Recommendation
-    # =========================
     if trend == "🟢 STRONG BULLISH":
         if rsi > 70:
             recommendation = "🟡 HOLD"

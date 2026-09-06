@@ -13,3 +13,12 @@ venv/
 # Generated reports
 reports/
 
+# Runtime logs (keep folder)
+logs/*.jsonl
+logs/*.log
+!logs/.gitkeep
+
+# Local cache
+.cache/
+
+

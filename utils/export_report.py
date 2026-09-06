@@ -128,8 +128,12 @@ def export_pdf(payload, path, title="StockShield AI Report"):
     return path
 
 
-def export_reports(payload, directory, symbol="STOCK"):
+def export_reports(payload, directory=None, symbol="STOCK"):
     """Write PDF, CSV, and JSON reports into directory. Returns file paths."""
+    if directory is None:
+        import config as _config
+
+        directory = _config.EXPORT_FOLDER
     os.makedirs(directory, exist_ok=True)
     stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     base = os.path.join(directory, f"{symbol}_{stamp}")

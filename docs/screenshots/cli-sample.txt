@@ -1,0 +1,38 @@
+StockShield AI — sample CLI (layout; live numbers change with the market)
+
+=============================================
+        📈 STOCKSHIELD AI
+=============================================
+Enter Stock Symbol: AAPL
+Enter Capital (default $10,000): 10000
+
+📊 Stock Analysis
+---------------------------------------------
+🏢 Company       : Apple Inc.
+💰 Current Price : $319.97
+📊 RSI           : 53.95
+📊 Trend         : 🟢 STRONG BULLISH
+🧠 AI Score      : 69/100
+📏 ATR(14)       : 7.63
+📐 ADX(14)       : 14.91
+
+==================================
+🧠 AI DECISION ENGINE
+==================================
+Action           : Accumulate
+Confidence       : 80%
+
+📡 Multi-Timeframe Analysis
+1D / 1W / 1M / 3M / 1Y + Overall Trend Alignment
+
+💼 Position Sizing
+Capital $10,000 | Risk 2% | Suggested Quantity | Allocation %
+
+🧾 AI Summary
+Apple remains technically bullish with improving momentum and strong fundamentals...
+
+📁 Exported Reports
+JSON / CSV / PDF under reports/
+
+⚙️ Benchmark
+Runtime | Peak Memory | API Response Time
