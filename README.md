@@ -89,10 +89,11 @@ You will be prompted for a symbol and capital. Reports land in `reports/`. Tune 
 Dashboard:
 
 ```bash
-streamlit run streamlit_app.py
+streamlit run dashboard.py
 ```
 
-Sidebar: symbol, capital, risk %, Analyze. Dark theme is set in `.streamlit/config.toml`.
+(`streamlit_app.py` remains available.) Dark theme is set in `.streamlit/config.toml`.
+Sidebar: symbol, capital, risk %, Analyze.
 
 Tests and lint (same as GitHub Actions):
 
