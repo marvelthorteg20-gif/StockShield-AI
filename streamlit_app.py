@@ -58,9 +58,10 @@ def render_dashboard() -> None:
         st.info("Enter a symbol in the sidebar and click **Analyze**.")
         return
 
+    from components.charts import render_charts
     from utils.export_report import export_csv, export_json, export_pdf
     from utils.pipeline import INSTITUTIONAL_LABELS, run_analysis
-    from utils.plotly_charts import candlestick_figure, score_gauge
+    from utils.plotly_charts import score_gauge
 
     try:
         with st.spinner("Fetching market data and running the engine…"):
@@ -88,11 +89,8 @@ def render_dashboard() -> None:
 
     left, right = st.columns((2, 1))
     with left:
-        _card("Live Candlestick Chart")
-        st.plotly_chart(
-            candlestick_figure(result.history, f"{result.company_name} · {result.symbol}"),
-            use_container_width=True,
-        )
+        _card("Live Trading Chart")
+        render_charts(result, show_classic=True)
     with right:
         _card("AI Score Gauge")
         st.plotly_chart(score_gauge(result.score), use_container_width=True)
