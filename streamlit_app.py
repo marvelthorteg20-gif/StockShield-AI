@@ -7,7 +7,9 @@ import tempfile
 
 import streamlit as st
 
-import config
+from components.header import render_header
+from components.metrics import render_metrics
+from components.sidebar import render_sidebar
 from utils.app_log import get_logger
 from utils.errors import StockShieldError
 from utils.session_log import log_event
@@ -44,31 +46,22 @@ def render_dashboard() -> None:
         unsafe_allow_html=True,
     )
 
-    st.title("StockShield AI")
-    st.caption("Professional equity terminal · dark workspace")
-
-    with st.sidebar:
-        st.header("Controls")
-        symbol = st.text_input("Stock Symbol", value="AAPL").strip().upper()
-        capital = st.number_input("Capital", min_value=100.0, value=10000.0, step=100.0)
-        risk_pct = st.number_input(
-            "Risk %",
-            min_value=0.1,
-            max_value=10.0,
-            value=float(config.RISK_PERCENT),
-            step=0.1,
-        )
-        analyze = st.button("Analyze", type="primary", use_container_width=True)
-        st.markdown("---")
-        st.caption("Yahoo Finance · Alpha Vantage news")
+    render_header()
+    controls = render_sidebar()
+    symbol = controls["symbol"]
+    capital = controls["capital"]
+    risk_pct = controls["risk_pct"]
+    analyze = controls["analyze"]
 
     if not analyze:
+        render_metrics()
         st.info("Enter a symbol in the sidebar and click **Analyze**.")
         return
 
+    from components.charts import render_charts
     from utils.export_report import export_csv, export_json, export_pdf
     from utils.pipeline import INSTITUTIONAL_LABELS, run_analysis
-    from utils.plotly_charts import candlestick_figure, score_gauge
+    from utils.plotly_charts import score_gauge
 
     try:
         with st.spinner("Fetching market data and running the engine…"):
@@ -85,6 +78,8 @@ def render_dashboard() -> None:
 
     log_event(result.symbol, event="dashboard_analysis")
 
+    render_metrics(result=result)
+
     _card("Company Information")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Company", result.company_name)
@@ -94,11 +89,8 @@ def render_dashboard() -> None:
 
     left, right = st.columns((2, 1))
     with left:
-        _card("Live Candlestick Chart")
-        st.plotly_chart(
-            candlestick_figure(result.history, f"{result.company_name} · {result.symbol}"),
-            use_container_width=True,
-        )
+        _card("Live Trading Chart")
+        render_charts(result)
     with right:
         _card("AI Score Gauge")
         st.plotly_chart(score_gauge(result.score), use_container_width=True)

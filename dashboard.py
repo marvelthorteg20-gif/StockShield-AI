@@ -10,7 +10,9 @@ from typing import Any, Tuple
 
 import streamlit as st
 
-import config
+from components.header import render_header
+from components.metrics import render_metrics
+from components.sidebar import render_sidebar
 from utils.app_log import get_logger
 from utils.dashboard_ui import (
     THEME_CSS,
@@ -78,21 +80,13 @@ def _render_company(result: Any) -> None:
 
 
 def _render_chart_and_score(result: Any) -> None:
-    """Draw the candlestick (lazy Plotly import) and AI score gauge."""
-    from utils.plotly_charts import candlestick_figure, score_gauge
+    """Draw the interactive Plotly candlestick plus the existing AI score gauge."""
+    from components.charts import render_charts
+    from utils.plotly_charts import score_gauge
+
     chart_col, score_col = st.columns((2.15, 1), gap="medium")
     with chart_col:
-        with st.expander("📊  Candlestick Chart", expanded=True):
-            history = result.history
-            required = {"Open", "High", "Low", "Close"}
-            if history is None or getattr(history, "empty", True) or not required.issubset(history.columns):
-                st.error("Candlestick data is incomplete.")
-            else:
-                st.plotly_chart(
-                    candlestick_figure(history, f"{result.symbol}  ·  {result.company_name}"),
-                    use_container_width=True,
-                    config={"displaylogo": False, "scrollZoom": True},
-                )
+        render_charts(result)
     with score_col:
         with st.expander("🧠  AI Score", expanded=True):
             st.plotly_chart(score_gauge(result.score), use_container_width=True)
@@ -300,21 +294,17 @@ def main() -> None:
         initial_sidebar_state="expanded",
     )
     _inject_theme()
-    st.title("📈  StockShield AI")
-    st.markdown('<div class="ss-kicker">TERMINAL  ·  DARK BOOK  ·  SAME ENGINES AS THE CLI</div>', unsafe_allow_html=True)
+    render_header()
+    st.markdown(
+        '<div class="ss-kicker">TERMINAL  ·  DARK BOOK  ·  SAME ENGINES AS THE CLI</div>',
+        unsafe_allow_html=True,
+    )
 
-    with st.sidebar:
-        st.header("⚙️  Analysis")
-        symbol = st.text_input("📌  Stock Symbol", value="AAPL")
-        capital = st.number_input("💵  Capital", min_value=100.0, value=10000.0, step=100.0)
-        risk_pct = st.number_input(
-            "⚠️  Risk %",
-            min_value=0.1,
-            max_value=10.0,
-            value=float(config.RISK_PERCENT),
-            step=0.1,
-        )
-        analyze = st.button("▶  Analyze", type="primary", use_container_width=True)
+    controls = render_sidebar()
+    symbol = controls["symbol"]
+    capital = controls["capital"]
+    risk_pct = controls["risk_pct"]
+    analyze = controls["analyze"]
 
     if analyze:
         try:
@@ -348,8 +338,10 @@ def main() -> None:
 
     result = st.session_state.get("stockshield_result")
     if result is None:
+        render_metrics()
         st.info("📌 Enter a symbol, capital, and risk % in the sidebar, then click **Analyze**.")
         return
+    render_metrics(result=result)
     _render_result(result)
 
 
