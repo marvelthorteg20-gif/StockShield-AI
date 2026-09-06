@@ -36,7 +36,10 @@ def test_smart_stop_uses_atr_and_support():
     assert levels["risk_pct"] > 0
     assert levels["target1"] > levels["entry"]
     assert levels["target2"] > levels["target1"]
-    assert levels["risk_reward"] >= 1.0
+    assert round(levels["risk_reward"], 2) == 2.0
+    assert round(levels["target1"] - levels["entry"], 4) == round(
+        2 * (levels["entry"] - levels["stop_loss"]), 4
+    )
 
 
 def test_candlestick_patterns():

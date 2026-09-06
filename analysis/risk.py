@@ -46,19 +46,8 @@ def calculate_smart_levels(entry, atr, support, resistance):
         risk_amount = entry * 0.02
         stop_loss = entry - risk_amount
 
-    target1_rr = entry + (2.0 * risk_amount)
-    target2_rr = entry + (3.0 * risk_amount)
-
-    if resistance_value > entry:
-        target1 = min(resistance_value, target1_rr)
-        if target1 <= entry:
-            target1 = target1_rr
-        target2 = max(resistance_value, target2_rr)
-        if target2 <= target1:
-            target2 = target1 + risk_amount
-    else:
-        target1 = target1_rr
-        target2 = target2_rr
+    target1 = entry + (2.0 * risk_amount)
+    target2 = entry + (3.0 * risk_amount)
 
     risk_pct = (risk_amount / entry) * 100
     reward = target1 - entry
