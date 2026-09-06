@@ -42,6 +42,14 @@ def test_version_is_1_0_0():
     assert config.VERSION == "1.0.0"
 
 
+def test_requirements_txt_is_utf8():
+    raw = Path("requirements.txt").read_bytes()
+    assert b"\x00" not in raw
+    text = raw.decode("utf-8")
+    assert "streamlit==" in text
+    assert "pytest==" in text
+
+
 def test_sma_ema_trend_helpers_still_work():
     history = make_history(60)
     history = calculate_sma(history)
