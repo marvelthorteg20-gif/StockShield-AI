@@ -1,4 +1,3 @@
-# Direct runtime and CI dependencies. Transitive packages install automatically.
 streamlit==1.63.0
 yfinance==1.7.0
 pandas==3.0.5
@@ -8,5 +7,6 @@ mplfinance==0.12.10b0
 matplotlib==3.11.1
 plotly==7.0.0
 requests==2.34.2
+python-dotenv==1.1.1
 pytest==8.4.2
 flake8==7.3.0
