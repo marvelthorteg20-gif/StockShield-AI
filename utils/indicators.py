@@ -1,7 +1,73 @@
 import yfinance as yf
 from ta.momentum import RSIIndicator
-from ta.trend import MACD
-from ta.volatility import BollingerBands
+from ta.trend import MACD, ADXIndicator
+from ta.volatility import BollingerBands, AverageTrueRange
+
+from analysis.ai_score import compute_ai_score
+from analysis.patterns import detect_candlestick_patterns
+from analysis.risk import (
+    calculate_smart_levels,
+    classify_adx_strength,
+    classify_volatility,
+)
+
+
+def _rating_from_score(score):
+    if score >= 90:
+        return "★★★★★"
+    if score >= 80:
+        return "★★★★☆"
+    if score >= 70:
+        return "★★★☆☆"
+    if score >= 60:
+        return "★★☆☆☆"
+    return "★☆☆☆☆"
+
+
+def _confidence_from_score(score):
+    if score >= 80:
+        return "🟢 HIGH"
+    if score >= 60:
+        return "🟡 MEDIUM"
+    return "🔴 LOW"
+
+
+def _risk_from_score(score, rsi, volatility_level):
+    if rsi > 70 or rsi < 30 or volatility_level == "🔴 High":
+        return "🔴 HIGH"
+    if score >= 80 and volatility_level == "🟢 Low":
+        return "🟢 LOW"
+    if _confidence_from_score(score) == "🟢 HIGH":
+        return "🟢 LOW"
+    return "🟡 MEDIUM"
+
+
+def refine_ai_score(
+    trend,
+    rsi,
+    macd_status,
+    bb_signal,
+    volume_status,
+    volatility_level,
+    adx_strength,
+    sentiment,
+    fundamental_score,
+):
+    score, _ = compute_ai_score(
+        trend=trend,
+        rsi=rsi,
+        macd_status=macd_status,
+        bb_signal=bb_signal,
+        volume_status=volume_status,
+        volatility_level=volatility_level,
+        adx_strength=adx_strength,
+        sentiment=sentiment,
+        fundamental_score=fundamental_score,
+    )
+    confidence = _confidence_from_score(score)
+    rating = _rating_from_score(score)
+    risk = _risk_from_score(score, rsi, volatility_level)
+    return score, confidence, rating, risk
 
 
 def calculate_indicators(symbol):
@@ -43,9 +109,27 @@ def calculate_indicators(symbol):
 
     history["VOL_AVG20"] = history["Volume"].rolling(20).mean()
 
+    atr_indicator = AverageTrueRange(
+        high=history["High"],
+        low=history["Low"],
+        close=history["Close"],
+        window=14,
+    )
+    history["ATR"] = atr_indicator.average_true_range()
+
+    adx_indicator = ADXIndicator(
+        high=history["High"],
+        low=history["Low"],
+        close=history["Close"],
+        window=14,
+    )
+    history["ADX"] = adx_indicator.adx()
+
     latest = history.iloc[-1]
 
     rsi = latest["RSI"]
+    atr = latest["ATR"]
+    adx = latest["ADX"]
 
     # =========================
     # Trend
@@ -106,86 +190,43 @@ def calculate_indicators(symbol):
     high_52 = history["High"].max()
     low_52 = history["Low"].min()
 
+    volatility_level = classify_volatility(atr, latest["Close"])
+    adx_strength = classify_adx_strength(adx)
+    patterns = detect_candlestick_patterns(history)
+    smart_levels = calculate_smart_levels(
+        entry=float(latest["Close"]),
+        atr=float(atr) if atr == atr else 0.0,
+        support=float(support),
+        resistance=float(resistance),
+    )
+
     # =========================
-    # AI Score
+    # AI Score (technicals; news + fundamentals applied later)
     # =========================
-    score = 40
-
-    if trend == "🟢 STRONG BULLISH":
-        score += 20
-    elif trend == "🟢 BULLISH":
-        score += 10
-    elif trend == "🔴 STRONG BEARISH":
-        score -= 20
-
-    if 45 <= rsi <= 60:
-        score += 15
-    elif 60 < rsi <= 70:
-        score += 8
-    elif rsi > 70:
-        score -= 10
-    elif rsi < 30:
-        score += 5
-
-    if macd_status == "🟢 Bullish Crossover":
-        score += 15
-    else:
-        score -= 10
-
-    if latest["Close"] > latest["EMA20"]:
-        score += 10
-
-    if latest["Close"] > latest["SMA20"]:
-        score += 5
-
-    if bb_signal == "🟢 Price Below Lower Band (Oversold)":
-        score += 5
-    elif bb_signal == "🔴 Price Above Upper Band (Overbought)":
-        score -= 5
-
-    if volume_status == "🟢 High Volume":
-        score += 10
-
-    if today_percent > 2:
-        score += 5
-    elif today_percent < -2:
-        score -= 10
-
-    score = max(0, min(score, 100))
+    score, _ = compute_ai_score(
+        trend=trend,
+        rsi=rsi,
+        macd_status=macd_status,
+        bb_signal=bb_signal,
+        volume_status=volume_status,
+        volatility_level=volatility_level,
+        adx_strength=adx_strength,
+    )
 
     # =========================
     # Confidence
     # =========================
-    if score >= 80:
-        confidence = "🟢 HIGH"
-    elif score >= 60:
-        confidence = "🟡 MEDIUM"
-    else:
-        confidence = "🔴 LOW"
+    confidence = _confidence_from_score(score)
 
     # =========================
     # Rating
     # =========================
-    if score >= 90:
-        rating = "★★★★★"
-    elif score >= 80:
-        rating = "★★★★☆"
-    elif score >= 70:
-        rating = "★★★☆☆"
-    elif score >= 60:
-        rating = "★★☆☆☆"
-    else:
-        rating = "★☆☆☆☆"
+    rating = _rating_from_score(score)
 
     # =========================
     # Risk
     # =========================
-    if rsi > 70 or rsi < 30:
-        risk = "🔴 HIGH"
-    elif confidence == "🟢 HIGH":
-        risk = "🟢 LOW"
-    else:
-        risk = "🟡 MEDIUM"
+    risk = _risk_from_score(score, rsi, volatility_level)
 
     # =========================
     # Recommendation
@@ -263,4 +304,10 @@ def calculate_indicators(symbol):
         low_52,
         today_change,
         today_percent,
+        atr,
+        volatility_level,
+        adx,
+        adx_strength,
+        patterns,
+        smart_levels,
     )
