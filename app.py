@@ -3,12 +3,21 @@ from utils.chart import plot_stock_chart
 from utils.news import get_news_sentiment
 from utils.fundamentals import get_fundamentals
 from utils.decision_engine import generate_decision
+from utils.multi_timeframe import analyze_timeframes
+from utils.institutional import detect_institutional_signals
+from utils.levels import calculate_sr_engine
+from utils.star_decision import rate_star_decision
+from utils.swing_trade import build_swing_plan
+from utils.position_sizing import calculate_position, parse_capital
+from utils.ai_summary import generate_ai_summary
+from utils.export_report import export_reports
 
 print("=" * 45)
 print("        📈 STOCKSHIELD AI")
 print("=" * 45)
 
 symbol = input("Enter Stock Symbol: ").upper()
+capital = parse_capital(input("Enter Capital (default $10,000): "))
 
 (
     history,
@@ -172,6 +181,138 @@ print("Overall Sentiment :", sentiment)
 
 print("\n📝 Explanation:")
 print(explanation)
+
+timeframes = analyze_timeframes(history)
+print("\n📡 Multi-Timeframe Analysis")
+print("-" * 45)
+print(f"1D  : {timeframes['1D']}")
+print(f"1W  : {timeframes['1W']}")
+print(f"1M  : {timeframes['1M']}")
+print(f"3M  : {timeframes['3M']}")
+print(f"1Y  : {timeframes['1Y']}")
+print()
+print(f"Overall Trend Alignment: {timeframes['alignment']}%")
+
+inst_signals = detect_institutional_signals(
+    history,
+    high_52=high_52,
+    low_52=low_52,
+    support=support,
+    resistance=resistance,
+)
+print("\n🏛️ Institutional Signals")
+print("-" * 45)
+signal_labels = (
+    ("unusual_volume", "Unusual Volume"),
+    ("breakout", "Breakout"),
+    ("breakdown", "Breakdown"),
+    ("near_52w_high", "Near 52 Week High"),
+    ("near_52w_low", "Near 52 Week Low"),
+    ("gap_up", "Gap Up"),
+    ("gap_down", "Gap Down"),
+)
+for key, label in signal_labels:
+    payload = inst_signals[key]
+    mark = "✔ Yes" if payload["detected"] else "✖ No"
+    print(f"{label:<20}: {mark:<8} (Confidence {payload['confidence']}%)")
+
+sr_levels = calculate_sr_engine(history)
+print("\n📐 Support & Resistance Engine")
+print("-" * 45)
+if sr_levels:
+    for level in sr_levels:
+        stars = "★" * level["strength"]
+        print(
+            f"{stars:<6} {level['kind']:<11} ${level['price']:.2f}  {level['name']}"
+        )
+else:
+    print("• Levels unavailable")
+
+star = rate_star_decision(decision)
+print("\n⭐ Trade Rating")
+print("-" * 45)
+print(star["display"])
+print("Why:")
+for reason in star["why"]:
+    print(f"• {reason}")
+
+swing = build_swing_plan(
+    entry=smart_levels["entry"],
+    stop_loss=smart_levels["stop_loss"],
+    target1=smart_levels["target1"],
+    target2=smart_levels["target2"],
+    atr=atr,
+    probability=decision["probability"],
+)
+print("\n📈 Swing Trading")
+print("-" * 45)
+print(f"Entry Price           : ${swing['entry']:.2f}")
+print(f"Stop Loss             : ${swing['stop_loss']:.2f}")
+print(f"Target 1              : ${swing['target1']:.2f}")
+print(f"Target 2              : ${swing['target2']:.2f}")
+print(f"Target 3              : ${swing['target3']:.2f}")
+print(f"Expected Holding Days : {swing['holding_days']}")
+print(f"Probability of Success: {swing['probability']}%")
+
+position = calculate_position(
+    capital=capital,
+    entry=swing["entry"],
+    stop_loss=swing["stop_loss"],
+    risk_pct=2.0,
+)
+print("\n💼 Position Sizing")
+print("-" * 45)
+print(f"Capital               : ${position['capital']:,.2f}")
+print(f"Risk                  : {position['risk_pct']:.0f}%")
+print(f"Maximum Loss          : ${position['max_loss']:,.2f}")
+print(f"Suggested Quantity    : {position['quantity']}")
+print(f"Portfolio Allocation %: {position['allocation_pct']:.2f}%")
+
+summary = generate_ai_summary(
+    company_name=company_name,
+    trend=trend,
+    rsi=rsi,
+    macd_status=macd_status,
+    fundamental_score=fundamental_score,
+    atr=atr,
+    adx=adx,
+    risk_level=risk,
+    sentiment=sentiment,
+    star_label=star["label"],
+    alignment=timeframes["alignment"],
+    institutional_signals=inst_signals,
+    volatility_level=volatility_level,
+)
+print("\n🧾 AI Summary")
+print("-" * 45)
+print(summary)
+
+report_payload = {
+    "symbol": symbol,
+    "company": company_name,
+    "price": float(latest["Close"]),
+    "trend": trend,
+    "rsi": float(rsi),
+    "macd_status": macd_status,
+    "ai_score": score,
+    "recommendation": recommendation,
+    "decision": decision,
+    "star_rating": star["display"],
+    "timeframes": timeframes,
+    "institutional": inst_signals,
+    "support_resistance": sr_levels,
+    "swing": swing,
+    "position": position,
+    "summary": summary,
+    "news_sentiment": sentiment,
+    "fundamental_score": fundamental_score,
+}
+export_paths = export_reports(report_payload, "reports", symbol=symbol)
+print("\n📁 Exported Reports")
+print("-" * 45)
+print(f"JSON : {export_paths['json']}")
+print(f"CSV  : {export_paths['csv']}")
+print(f"PDF  : {export_paths['pdf']}")
 
 print("-" * 45)
 plot_stock_chart(history, company_name)

@@ -10,6 +10,6 @@ venv/
 # VS Code
 .vscode/
 
-# OS files
-.DS_Store
-Thumbs.db
+# Generated reports
+reports/
+
