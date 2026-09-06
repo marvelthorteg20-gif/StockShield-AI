@@ -7,7 +7,9 @@ import tempfile
 
 import streamlit as st
 
-import config
+from components.header import render_header
+from components.metrics import render_metrics
+from components.sidebar import render_sidebar
 from utils.app_log import get_logger
 from utils.errors import StockShieldError
 from utils.session_log import log_event
@@ -44,25 +46,15 @@ def render_dashboard() -> None:
         unsafe_allow_html=True,
     )
 
-    st.title("StockShield AI")
-    st.caption("Professional equity terminal · dark workspace")
-
-    with st.sidebar:
-        st.header("Controls")
-        symbol = st.text_input("Stock Symbol", value="AAPL").strip().upper()
-        capital = st.number_input("Capital", min_value=100.0, value=10000.0, step=100.0)
-        risk_pct = st.number_input(
-            "Risk %",
-            min_value=0.1,
-            max_value=10.0,
-            value=float(config.RISK_PERCENT),
-            step=0.1,
-        )
-        analyze = st.button("Analyze", type="primary", use_container_width=True)
-        st.markdown("---")
-        st.caption("Yahoo Finance · Alpha Vantage news")
+    render_header()
+    controls = render_sidebar()
+    symbol = controls["symbol"]
+    capital = controls["capital"]
+    risk_pct = controls["risk_pct"]
+    analyze = controls["analyze"]
 
     if not analyze:
+        render_metrics()
         st.info("Enter a symbol in the sidebar and click **Analyze**.")
         return
 
@@ -84,6 +76,8 @@ def render_dashboard() -> None:
         return
 
     log_event(result.symbol, event="dashboard_analysis")
+
+    render_metrics(result=result)
 
     _card("Company Information")
     c1, c2, c3, c4 = st.columns(4)

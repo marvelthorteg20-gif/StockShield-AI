@@ -15,16 +15,8 @@ def render_overview_page(result: Any | None = None) -> None:
     """Company snapshot layout. Does not run analysis."""
     render_header()
     st.subheader("Overview")
+    render_metrics(result=result)
     if result is None:
-        render_metrics()
         render_charts()
         return
-    render_metrics(
-        [
-            {"label": "Company", "value": getattr(result, "company_name", "—")},
-            {"label": "Sector", "value": getattr(result, "sector", "—")},
-            {"label": "Rating", "value": getattr(result, "rating", "—")},
-            {"label": "Confidence", "value": getattr(result, "confidence", "—")},
-        ]
-    )
     render_charts(result)

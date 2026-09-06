@@ -74,3 +74,46 @@ def test_expected_v2_files_exist():
         "pages/watchlist.py",
     ):
         assert (ROOT / relative).is_file()
+
+
+def test_header_declares_v2_badge():
+    text = (ROOT / "components" / "header.py").read_text(encoding="utf-8")
+    assert "v2 Development" in text
+    assert "datetime" in text
+
+
+def test_sidebar_declares_nav_placeholders():
+    text = (ROOT / "components" / "sidebar.py").read_text(encoding="utf-8")
+    for label in (
+        "Search Stock",
+        "Watchlist",
+        "Portfolio",
+        "Markets",
+        "News",
+        "Settings",
+    ):
+        assert label in text
+
+
+def test_kpi_items_use_existing_analysis_fields_only():
+    from types import SimpleNamespace
+
+    from components.metrics import KPI_LABELS, kpi_items_from_result
+
+    result = SimpleNamespace(
+        latest={"Close": 100.5},
+        today_percent=1.25,
+        score=72,
+        recommendation="BUY",
+        confidence="High",
+        volatility_level="Medium",
+    )
+    items = kpi_items_from_result(result)
+    labels = [item["label"] for item in items]
+    assert labels == list(KPI_LABELS)
+    values = {item["label"]: item["value"] for item in items}
+    assert values["Current Price"] == "$100.50"
+    assert values["AI Score"] == 72
+    assert values["Recommendation"] == "BUY"
+    assert values["Confidence"] == "High"
+    assert values["Risk Level"] == "Medium"

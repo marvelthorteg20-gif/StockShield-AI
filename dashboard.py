@@ -10,7 +10,9 @@ from typing import Any, Tuple
 
 import streamlit as st
 
-import config
+from components.header import render_header
+from components.metrics import render_metrics
+from components.sidebar import render_sidebar
 from utils.app_log import get_logger
 from utils.dashboard_ui import (
     THEME_CSS,
@@ -300,21 +302,17 @@ def main() -> None:
         initial_sidebar_state="expanded",
     )
     _inject_theme()
-    st.title("📈  StockShield AI")
-    st.markdown('<div class="ss-kicker">TERMINAL  ·  DARK BOOK  ·  SAME ENGINES AS THE CLI</div>', unsafe_allow_html=True)
+    render_header()
+    st.markdown(
+        '<div class="ss-kicker">TERMINAL  ·  DARK BOOK  ·  SAME ENGINES AS THE CLI</div>',
+        unsafe_allow_html=True,
+    )
 
-    with st.sidebar:
-        st.header("⚙️  Analysis")
-        symbol = st.text_input("📌  Stock Symbol", value="AAPL")
-        capital = st.number_input("💵  Capital", min_value=100.0, value=10000.0, step=100.0)
-        risk_pct = st.number_input(
-            "⚠️  Risk %",
-            min_value=0.1,
-            max_value=10.0,
-            value=float(config.RISK_PERCENT),
-            step=0.1,
-        )
-        analyze = st.button("▶  Analyze", type="primary", use_container_width=True)
+    controls = render_sidebar()
+    symbol = controls["symbol"]
+    capital = controls["capital"]
+    risk_pct = controls["risk_pct"]
+    analyze = controls["analyze"]
 
     if analyze:
         try:
@@ -348,8 +346,10 @@ def main() -> None:
 
     result = st.session_state.get("stockshield_result")
     if result is None:
+        render_metrics()
         st.info("📌 Enter a symbol, capital, and risk % in the sidebar, then click **Analyze**.")
         return
+    render_metrics(result=result)
     _render_result(result)
 
 
