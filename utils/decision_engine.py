@@ -319,6 +319,14 @@ def generate_decision(
     conviction = sum(components)
     action = _action_from_score(conviction)
 
+    # ADX must confirm extreme actions.
+    if action == "Strong Buy" and adx_value <= 25:
+        action = "Buy" if adx_value >= 20 else "Accumulate"
+    if action == "Strong Sell" and adx_value <= 25:
+        action = "Sell" if adx_value >= 20 else "Reduce"
+
+    agreement_confidence = int(max(20, min(96, 50 + abs(conviction) * 0.55)))
+
     if _matches_strong_buy(
         trend, rsi_value, macd_status, fundamental_score, news_sentiment, adx_value
     ):
@@ -326,9 +334,9 @@ def generate_decision(
         confidence = 92
     elif _matches_reduce_setup(trend, rsi_value, macd_status, news_sentiment):
         action = "Reduce"
-        confidence = max(62, min(78, 70 + abs(int(conviction * 0.1))))
+        confidence = max(62, min(78, agreement_confidence))
     else:
-        confidence = int(max(20, min(96, 50 + conviction * 0.55)))
+        confidence = agreement_confidence
 
     aligned = sum(1 for value in components if value > 0)
     if action in ("Reduce", "Sell", "Strong Sell"):

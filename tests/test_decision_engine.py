@@ -99,6 +99,15 @@ def test_hold_on_mixed_signals():
     assert 20 <= decision["confidence"] <= 70
 
 
+def test_weak_adx_caps_strong_buy():
+    inputs = _strong_buy_inputs()
+    inputs["adx"] = 14
+    inputs["news_sentiment"] = "🟡 NEUTRAL"
+    decision = generate_decision(**inputs)
+    assert decision["action"] in ("Buy", "Accumulate", "Hold")
+    assert decision["action"] != "Strong Buy"
+
+
 def test_decision_includes_all_output_fields():
     decision = generate_decision(**_strong_buy_inputs())
     assert set(decision) >= {
