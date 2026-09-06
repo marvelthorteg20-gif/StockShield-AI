@@ -7,6 +7,7 @@ from streamlit.testing.v1 import AppTest
 from components.charts import (
     CHART_TABS,
     PLOTLY_CONFIG,
+    close_figure,
     macd_figure,
     price_figure,
     rsi_figure,
@@ -53,6 +54,13 @@ def test_overlays_can_be_hidden_without_recalculating():
     assert "OHLC" in names
 
 
+def test_price_tab_line_chart_uses_existing_close_and_overlays():
+    history = _history_with_existing_columns()
+    fig = close_figure(history, "Test", show_sma20=True, show_ema20=True)
+    names = _trace_names(fig)
+    assert {"Close", "SMA20", "EMA20"} <= names
+
+
 def test_rsi_macd_volume_figures_read_existing_columns():
     history = _history_with_existing_columns()
     rsi = rsi_figure(history)
@@ -90,7 +98,7 @@ def _chart_harness() -> None:
         symbol="AAPL",
         company_name="Apple",
     )
-    render_charts(result, show_classic=True)
+    render_charts(result)
 
 
 def test_render_charts_apptest_exposes_tabs_and_overlays():
@@ -102,5 +110,3 @@ def test_render_charts_apptest_exposes_tabs_and_overlays():
     checkbox_labels = [box.label for box in at.checkbox]
     assert "SMA20" in checkbox_labels
     assert "EMA20" in checkbox_labels
-    expander_labels = [exp.label for exp in at.expander]
-    assert any("Classic chart" in label for label in expander_labels)

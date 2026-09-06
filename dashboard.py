@@ -80,14 +80,13 @@ def _render_company(result: Any) -> None:
 
 
 def _render_chart_and_score(result: Any) -> None:
-    """Draw interactive Plotly tabs plus the existing AI score gauge."""
+    """Draw the interactive Plotly candlestick plus the existing AI score gauge."""
     from components.charts import render_charts
     from utils.plotly_charts import score_gauge
 
     chart_col, score_col = st.columns((2.15, 1), gap="medium")
     with chart_col:
-        with st.expander("📊  Trading Chart", expanded=True):
-            render_charts(result, show_classic=True)
+        render_charts(result)
     with score_col:
         with st.expander("🧠  AI Score", expanded=True):
             st.plotly_chart(score_gauge(result.score), use_container_width=True)

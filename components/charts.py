@@ -247,6 +247,47 @@ def volume_figure(history: pd.DataFrame, title: str = "Volume") -> go.Figure:
     return fig
 
 
+def close_figure(
+    history: pd.DataFrame,
+    title: str,
+    *,
+    show_sma20: bool = True,
+    show_ema20: bool = True,
+) -> go.Figure:
+    """Price-tab line view using existing Close / SMA20 / EMA20 columns."""
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=history.index,
+            y=history["Close"],
+            name="Close",
+            line=dict(color="#e8eef7", width=1.7),
+        )
+    )
+    if show_sma20 and "SMA20" in history.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=history.index,
+                y=history["SMA20"],
+                name="SMA20",
+                line=dict(color="#42a5f5", width=1.4),
+            )
+        )
+    if show_ema20 and "EMA20" in history.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=history.index,
+                y=history["EMA20"],
+                name="EMA20",
+                line=dict(color="#f0b429", width=1.4),
+            )
+        )
+    _apply_crosshair(fig)
+    fig.update_layout(title=dict(text=title, font=dict(size=15)), height=360)
+    fig.update_yaxes(title_text="Price")
+    return fig
+
+
 def _show_figure(fig: go.Figure) -> None:
     st.plotly_chart(fig, use_container_width=True, config=PLOTLY_CONFIG)
 
@@ -254,9 +295,9 @@ def _show_figure(fig: go.Figure) -> None:
 def render_charts(
     result: Any | None = None,
     *,
-    show_classic: bool = True,
+    show_classic: bool = False,
 ) -> None:
-    """Render Price / RSI / MACD / Volume tabs from existing history columns."""
+    """Render the main candlestick, then Price / RSI / MACD / Volume tabs."""
     if result is None:
         st.info("Interactive charts load after analysis.")
         return
@@ -276,10 +317,14 @@ def render_charts(
     with overlay_r:
         show_ema20 = st.checkbox("EMA20", value=True, key="ss_overlay_ema20")
 
+    _show_figure(
+        price_figure(history, title, show_sma20=show_sma20, show_ema20=show_ema20)
+    )
+
     price_tab, rsi_tab, macd_tab, volume_tab = st.tabs(list(CHART_TABS))
     with price_tab:
         _show_figure(
-            price_figure(history, title, show_sma20=show_sma20, show_ema20=show_ema20)
+            close_figure(history, f"{title} · Price", show_sma20=show_sma20, show_ema20=show_ema20)
         )
     with rsi_tab:
         if "RSI" in history.columns:

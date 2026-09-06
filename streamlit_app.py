@@ -90,7 +90,7 @@ def render_dashboard() -> None:
     left, right = st.columns((2, 1))
     with left:
         _card("Live Trading Chart")
-        render_charts(result, show_classic=True)
+        render_charts(result)
     with right:
         _card("AI Score Gauge")
         st.plotly_chart(score_gauge(result.score), use_container_width=True)
