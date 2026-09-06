@@ -1,6 +1,7 @@
 from utils.indicators import calculate_indicators
 from utils.chart import plot_stock_chart
 from utils.news import get_news_sentiment
+from utils.fundamentals import get_fundamentals
 
 print("=" * 45)
 print("        📈 STOCKSHIELD AI")
@@ -29,6 +30,18 @@ symbol = input("Enter Stock Symbol: ").upper()
     today_change,
     today_percent
 ) = calculate_indicators(symbol)
+
+(
+    market_cap,
+    pe_ratio,
+    eps,
+    dividend,
+    beta,
+    revenue,
+    profit_margin,
+    fundamental_score,
+) = get_fundamentals(symbol)
+
 
 # Fetch latest news
 news, sentiment = get_news_sentiment(symbol)
@@ -70,6 +83,16 @@ print(f"🤖 Recommendation : {recommendation}")
 print("\n📰 Latest News")
 print("-" * 45)
 
+print("\n📑 Fundamental Analysis")
+print("---------------------------------------------")
+print(f"💼 Market Cap       : ${market_cap:,}")
+print(f"📊 P/E Ratio        : {pe_ratio}")
+print(f"💵 EPS              : {eps}")
+print(f"💰 Dividend Yield   : {dividend}")
+print(f"📈 Beta             : {beta}")
+print(f"🏢 Revenue          : ${revenue:,}")
+print(f"📊 Profit Margin    : {profit_margin:.2%}")
+print(f"🧠 Fundamental Score: {fundamental_score}/100")
 for item in news:
     print(item)
 
