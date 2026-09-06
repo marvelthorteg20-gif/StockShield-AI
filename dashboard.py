@@ -11,6 +11,14 @@ from typing import Any, Tuple
 import streamlit as st
 
 import config
+from utils.dashboard_ui import (
+    THEME_CSS,
+    clamp_pct,
+    metric_card,
+    tape,
+    tone_from_signed,
+    tone_from_text,
+)
 from utils.errors import EmptyDataError, InvalidTickerError, NetworkError, StockShieldError
 from utils.market_data import validate_symbol
 from utils.pipeline import run_analysis
@@ -38,115 +46,132 @@ def validate_dashboard_inputs(
 
 
 def _inject_theme() -> None:
-    st.markdown(
-        """
-        <style>
-        .block-container { padding-top: 1.1rem; max-width: 1320px; }
-        div[data-testid="stMetric"] {
-            background: #151c2c;
-            border: 1px solid #243044;
-            border-radius: 12px;
-            padding: 0.55rem 0.75rem;
-        }
-        section[data-testid="stSidebar"] {
-            background: #101827;
-        }
-        h1, h2, h3 { letter-spacing: 0.01em; }
-        </style>
-        """,
-        unsafe_allow_html=True,
+    st.markdown(THEME_CSS, unsafe_allow_html=True)
+
+
+def _cards(*html_cards: str) -> None:
+    st.markdown(tape(*html_cards), unsafe_allow_html=True)
+
+
+def _render_company(result: Any) -> None:
+    latest = result.latest
+    change_tone = tone_from_signed(result.today_percent)
+    rec_tone = tone_from_text(result.recommendation)
+    trend_tone = tone_from_text(result.trend)
+    _cards(
+        metric_card("🏢", "Company", result.company_name, result.sector, "neutral"),
+        metric_card("💲", "Last", f"${float(latest['Close']):.2f}", None, change_tone),
+        metric_card(
+            "📈" if result.today_percent >= 0 else "📉",
+            "Today",
+            f"{result.today_percent:+.2f}%",
+            f"{result.today_change:+.2f}",
+            change_tone,
+        ),
+        metric_card("🧭", "Trend", result.trend, None, trend_tone),
+        metric_card("🤖", "Rec", result.recommendation, None, rec_tone),
     )
 
 
-def _section(title: str) -> None:
-    st.markdown(f"### {title}")
-
-
-def _render_result(result: Any) -> None:
-    latest = result.latest
-    _section("Company Information")
-    a, b, c, d = st.columns(4)
-    a.metric("Company", result.company_name)
-    b.metric("Sector", result.sector)
-    c.metric("Price", f"${float(latest['Close']):.2f}")
-    d.metric("Today", f"{result.today_percent:+.2f}%")
-
-    chart_col, score_col = st.columns((2.1, 1))
+def _render_chart_and_score(result: Any) -> None:
+    chart_col, score_col = st.columns((2.15, 1), gap="medium")
     with chart_col:
-        _section("Candlestick Chart")
-        history = result.history
-        required = {"Open", "High", "Low", "Close"}
-        if history is None or getattr(history, "empty", True) or not required.issubset(history.columns):
-            st.error("Candlestick data is incomplete.")
-        else:
-            st.plotly_chart(
-                candlestick_figure(history, f"{result.company_name} · {result.symbol}"),
-                use_container_width=True,
-            )
+        with st.expander("📊  Candlestick Chart", expanded=True):
+            history = result.history
+            required = {"Open", "High", "Low", "Close"}
+            if history is None or getattr(history, "empty", True) or not required.issubset(history.columns):
+                st.error("Candlestick data is incomplete.")
+            else:
+                st.plotly_chart(
+                    candlestick_figure(history, f"{result.symbol}  ·  {result.company_name}"),
+                    use_container_width=True,
+                    config={"displaylogo": False, "scrollZoom": True},
+                )
     with score_col:
-        _section("AI Score")
-        st.plotly_chart(score_gauge(result.score), use_container_width=True)
-        st.metric("Rating", result.rating)
-        st.metric("Confidence", result.confidence)
-        st.metric("Recommendation", result.recommendation)
+        with st.expander("🧠  AI Score", expanded=True):
+            st.plotly_chart(score_gauge(result.score), use_container_width=True)
+            st.progress(clamp_pct(result.score), text=f"AI Score  {result.score}/100")
+            st.caption(f"⭐ {result.rating}   ·   {result.confidence}")
 
-    _section("Decision Engine")
-    d1, d2, d3, d4 = st.columns(4)
-    d1.metric("Action", result.decision["action"])
-    d2.metric("Confidence", f"{result.decision['confidence']}%")
-    d3.metric("Probability", f"{result.decision['probability']}%")
-    d4.metric("Holding Period", result.decision["holding_period"])
-    st.write("Risk/Reward:", result.decision["risk_reward_rating"])
-    for reason in result.decision.get("reasons") or []:
-        st.markdown(f"- {reason}")
 
-    tech_col, fund_col = st.columns(2)
-    with tech_col:
-        _section("Technical Indicators")
+def _render_decision(result: Any) -> None:
+    with st.expander("⚖️  Decision Engine", expanded=True):
+        action = result.decision["action"]
+        tone = tone_from_text(action)
+        _cards(
+            metric_card("⚡", "Action", action, result.star.get("display"), tone),
+            metric_card("🎯", "Confidence", f"{result.decision['confidence']}%", None, "neutral"),
+            metric_card("📊", "Probability", f"{result.decision['probability']}%", None, "neutral"),
+            metric_card("⏳", "Horizon", result.decision["holding_period"], None, "neutral"),
+            metric_card("📐", "R/R", str(result.decision["risk_reward_rating"]), None, "neutral"),
+        )
+        c1, c2 = st.columns(2, gap="medium")
+        with c1:
+            st.progress(
+                clamp_pct(result.decision["confidence"]),
+                text=f"Confidence  {result.decision['confidence']}%",
+            )
+        with c2:
+            st.progress(
+                clamp_pct(result.decision["probability"]),
+                text=f"Probability  {result.decision['probability']}%",
+            )
+        st.markdown("**Reasons**")
+        for reason in result.decision.get("reasons") or []:
+            st.markdown(f"- {reason}")
+
+
+def _render_technicals(result: Any) -> None:
+    latest = result.latest
+    with st.expander("📡  Technical Indicators", expanded=False):
+        macd_tone = "up" if float(latest["MACD"]) >= float(latest["MACD_SIGNAL"]) else "down"
+        _cards(
+            metric_card("📉", "SMA20", f"${float(latest['SMA20']):.2f}"),
+            metric_card("📈", "EMA20", f"${float(latest['EMA20']):.2f}"),
+            metric_card("🌡️", "RSI", f"{result.rsi:.2f}"),
+            metric_card("📶", "MACD", f"{float(latest['MACD']):.2f}", None, macd_tone),
+            metric_card("📦", "Volume", result.volume_status, None, tone_from_text(result.volume_status)),
+        )
+        st.progress(clamp_pct(result.rsi), text=f"RSI  {result.rsi:.1f}")
+        st.progress(clamp_pct(result.adx), text=f"ADX  {result.adx:.1f}")
         st.dataframe(
             {
                 "Metric": [
-                    "SMA20",
-                    "EMA20",
-                    "RSI",
-                    "Trend",
-                    "MACD",
-                    "Signal Line",
                     "MACD Status",
                     "Bollinger",
-                    "Volume",
                     "ATR",
                     "Volatility",
-                    "ADX",
                     "Trend Strength",
                     "Support",
                     "Resistance",
+                    "52W High",
+                    "52W Low",
                 ],
                 "Value": [
-                    f"${float(latest['SMA20']):.2f}",
-                    f"${float(latest['EMA20']):.2f}",
-                    f"{result.rsi:.2f}",
-                    result.trend,
-                    f"{float(latest['MACD']):.2f}",
-                    f"{float(latest['MACD_SIGNAL']):.2f}",
                     result.macd_status,
                     result.bb_signal,
-                    result.volume_status,
                     f"{result.atr:.2f}",
                     result.volatility_level,
-                    f"{result.adx:.2f}",
                     result.adx_strength,
                     f"${result.support:.2f}",
                     f"${result.resistance:.2f}",
+                    f"${result.high_52:.2f}",
+                    f"${result.low_52:.2f}",
                 ],
             },
             hide_index=True,
             use_container_width=True,
         )
         patterns = ", ".join(result.patterns) if result.patterns else "No pattern detected"
-        st.caption(f"Candlestick patterns: {patterns}")
-    with fund_col:
-        _section("Fundamentals")
+        st.caption(f"🕯️ Candlestick patterns: {patterns}")
+
+
+def _render_fundamentals(result: Any) -> None:
+    with st.expander("🏦  Fundamentals", expanded=False):
+        st.progress(
+            clamp_pct(result.fundamental_score),
+            text=f"Fundamental Score  {result.fundamental_score}/100",
+        )
         st.dataframe(
             {
                 "Metric": [
@@ -157,7 +182,6 @@ def _render_result(result: Any) -> None:
                     "Beta",
                     "Revenue",
                     "Profit Margin",
-                    "Fundamental Score",
                 ],
                 "Value": [
                     f"${result.market_cap:,}",
@@ -167,49 +191,88 @@ def _render_result(result: Any) -> None:
                     result.beta,
                     f"${result.revenue:,}",
                     f"{result.profit_margin:.2%}",
-                    f"{result.fundamental_score}/100",
                 ],
             },
             hide_index=True,
             use_container_width=True,
         )
 
-    _section("News")
-    st.write("Overall sentiment:", result.sentiment)
-    for item in result.news:
-        st.markdown(f"- {item}")
 
-    risk_col, size_col, swing_col = st.columns(3)
-    with risk_col:
-        _section("Smart Risk Management")
-        sl = result.smart_levels
-        st.metric("Entry Price", f"${sl['entry']:.2f}")
-        st.metric("Stop Loss", f"${sl['stop_loss']:.2f}")
-        st.metric("Risk %", f"{sl['risk_pct']:.2f}%")
-        st.metric("Target 1", f"${sl['target1']:.2f}")
-        st.metric("Target 2", f"${sl['target2']:.2f}")
-        st.metric("Risk/Reward", f"{sl['risk_reward']:.2f}")
-    with size_col:
-        _section("Position Size")
-        pos = result.position
-        st.metric("Capital", f"${pos['capital']:,.2f}")
-        st.metric("Risk", f"{pos['risk_pct']:.1f}%")
-        st.metric("Maximum Loss", f"${pos['max_loss']:,.2f}")
-        st.metric("Suggested Quantity", str(pos["quantity"]))
-        st.metric("Allocation", f"{pos['allocation_pct']:.2f}%")
-    with swing_col:
-        _section("Swing Plan")
-        sw = result.swing
-        st.metric("Entry Price", f"${sw['entry']:.2f}")
-        st.metric("Stop Loss", f"${sw['stop_loss']:.2f}")
-        st.metric("Target 1", f"${sw['target1']:.2f}")
-        st.metric("Target 2", f"${sw['target2']:.2f}")
-        st.metric("Target 3", f"${sw['target3']:.2f}")
-        st.metric("Holding Days", str(sw["holding_days"]))
-        st.metric("Probability", f"{sw['probability']}%")
+def _render_news(result: Any) -> None:
+    with st.expander("📰  News", expanded=False):
+        tone = tone_from_text(result.sentiment)
+        _cards(metric_card("📡", "Sentiment", result.sentiment, None, tone))
+        for item in result.news:
+            st.markdown(f"- {item}")
 
-    _section("AI Summary")
-    st.write(result.summary)
+
+def _render_risk_size_swing(result: Any) -> None:
+    sl = result.smart_levels
+    pos = result.position
+    sw = result.swing
+    r1, r2, r3 = st.columns(3, gap="medium")
+    with r1:
+        with st.expander("🛡️  Smart Risk Management", expanded=True):
+            _cards(
+                metric_card("🎯", "Entry", f"${sl['entry']:.2f}"),
+                metric_card("🛑", "Stop", f"${sl['stop_loss']:.2f}", None, "down"),
+                metric_card("⚠️", "Risk", f"{sl['risk_pct']:.2f}%"),
+            )
+            st.metric("Target 1", f"${sl['target1']:.2f}")
+            st.metric("Target 2", f"${sl['target2']:.2f}")
+            st.metric("Risk/Reward", f"{sl['risk_reward']:.2f}")
+    with r2:
+        with st.expander("💼  Position Size", expanded=True):
+            st.progress(
+                clamp_pct(pos["allocation_pct"]),
+                text=f"Allocation  {pos['allocation_pct']:.1f}%",
+            )
+            st.metric("Capital", f"${pos['capital']:,.2f}")
+            st.metric("Risk", f"{pos['risk_pct']:.1f}%")
+            st.metric("Maximum Loss", f"${pos['max_loss']:,.2f}")
+            st.metric("Suggested Quantity", str(pos["quantity"]))
+    with r3:
+        with st.expander("🎢  Swing Plan", expanded=True):
+            st.progress(
+                clamp_pct(sw["probability"]),
+                text=f"Success probability  {sw['probability']}%",
+            )
+            st.metric("Entry", f"${sw['entry']:.2f}")
+            st.metric("Stop", f"${sw['stop_loss']:.2f}")
+            st.metric("T1 / T2 / T3", f"${sw['target1']:.2f} · ${sw['target2']:.2f} · ${sw['target3']:.2f}")
+            st.metric("Holding days", str(sw["holding_days"]))
+
+
+def _render_summary(result: Any) -> None:
+    with st.expander("🧾  AI Summary", expanded=True):
+        st.write(result.summary)
+
+
+def _render_result(result: Any) -> None:
+    _render_company(result)
+    _render_chart_and_score(result)
+    _render_decision(result)
+    tech, fund = st.columns(2, gap="medium")
+    with tech:
+        _render_technicals(result)
+    with fund:
+        _render_fundamentals(result)
+        _render_news(result)
+    _render_risk_size_swing(result)
+    _render_summary(result)
+
+
+def _run_analysis_with_progress(ticker: str, capital_value: float, risk_value: float):
+    bar = st.progress(12, text="Connecting to market data…")
+    try:
+        bar.progress(35, text="Fetching quotes, news, and fundamentals…")
+        with st.spinner("Running StockShield analysis…"):
+            result = run_analysis(ticker, capital=capital_value, risk_pct=risk_value)
+        bar.progress(82, text="Rendering terminal…")
+        bar.progress(100, text="Live")
+        return result
+    finally:
+        pass
 
 
 def main() -> None:
@@ -221,31 +284,28 @@ def main() -> None:
         initial_sidebar_state="expanded",
     )
     _inject_theme()
-    st.title("StockShield AI")
-    st.caption("Professional dashboard · same engines as the CLI")
+    st.title("📈  StockShield AI")
+    st.markdown('<div class="ss-kicker">TERMINAL  ·  DARK BOOK  ·  SAME ENGINES AS THE CLI</div>', unsafe_allow_html=True)
 
     with st.sidebar:
-        st.header("Analysis")
-        symbol = st.text_input("Stock Symbol", value="AAPL")
-        capital = st.number_input("Capital", min_value=100.0, value=10000.0, step=100.0)
+        st.header("⚙️  Analysis")
+        symbol = st.text_input("📌  Stock Symbol", value="AAPL")
+        capital = st.number_input("💵  Capital", min_value=100.0, value=10000.0, step=100.0)
         risk_pct = st.number_input(
-            "Risk %",
+            "⚠️  Risk %",
             min_value=0.1,
             max_value=10.0,
             value=float(config.RISK_PERCENT),
             step=0.1,
         )
-        analyze = st.button("Analyze", type="primary", use_container_width=True)
+        analyze = st.button("▶  Analyze", type="primary", use_container_width=True)
 
     if analyze:
         try:
             ticker, capital_value, risk_value = validate_dashboard_inputs(
                 symbol, capital, risk_pct
             )
-            with st.spinner("Running StockShield analysis…"):
-                result = run_analysis(
-                    ticker, capital=capital_value, risk_pct=risk_value
-                )
+            result = _run_analysis_with_progress(ticker, capital_value, risk_value)
             st.session_state["stockshield_result"] = result
             log_event(ticker, event="dashboard_analysis")
         except InvalidTickerError as exc:
@@ -271,7 +331,7 @@ def main() -> None:
 
     result = st.session_state.get("stockshield_result")
     if result is None:
-        st.info("Enter a symbol, capital, and risk % in the sidebar, then click **Analyze**.")
+        st.info("📌 Enter a symbol, capital, and risk % in the sidebar, then click **Analyze**.")
         return
     _render_result(result)
 
