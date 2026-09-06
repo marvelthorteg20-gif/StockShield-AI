@@ -10,7 +10,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-26a69a" alt="Version 1.0.0" />
-  <img src="https://img.shields.io/badge/python-3.10%2B-3776AB" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="Python 3.12" />
   <img src="https://img.shields.io/badge/license-MIT-f0b429" alt="MIT License" />
   <img src="https://img.shields.io/badge/platform-Windows%20%7C%20Linux-1e2a3a" alt="Windows and Linux" />
 </p>

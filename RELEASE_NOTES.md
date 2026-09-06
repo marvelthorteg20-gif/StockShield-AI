@@ -23,7 +23,7 @@ StockShield AI 1.0 is the first public release of the professional equity termin
 
 ## Install
 
-Python 3.10+ (3.11 recommended).
+Python **3.12** (required by the pinned `numpy==2.5.2` stack).
 
 Linux / macOS:
 
