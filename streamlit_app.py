@@ -8,6 +8,7 @@ import tempfile
 import streamlit as st
 
 from components.header import render_header
+from components.investor_partner import render_investor_partner
 from components.metrics import render_metrics
 from components.sidebar import render_sidebar
 from utils.app_log import get_logger
@@ -56,6 +57,7 @@ def render_dashboard() -> None:
     if not analyze:
         render_metrics()
         st.info("Enter a symbol in the sidebar and click **Analyze**.")
+        render_investor_partner()
         return
 
     from components.charts import render_charts
@@ -278,6 +280,8 @@ def render_dashboard() -> None:
         b2.download_button("Download CSV", handle, file_name=f"{result.symbol}.csv")
     with open(pdf_path, "rb") as handle:
         b3.download_button("Download PDF", handle, file_name=f"{result.symbol}.pdf")
+
+    render_investor_partner()
 
 
 render_dashboard()

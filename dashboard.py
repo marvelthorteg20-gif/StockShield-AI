@@ -11,6 +11,7 @@ from typing import Any, Tuple
 import streamlit as st
 
 from components.header import render_header
+from components.investor_partner import render_investor_partner
 from components.metrics import render_metrics
 from components.sidebar import render_sidebar
 from utils.app_log import get_logger
@@ -340,9 +341,11 @@ def main() -> None:
     if result is None:
         render_metrics()
         st.info("📌 Enter a symbol, capital, and risk % in the sidebar, then click **Analyze**.")
+        render_investor_partner()
         return
     render_metrics(result=result)
     _render_result(result)
+    render_investor_partner()
 
 
 if __name__ == "__main__":

@@ -14,6 +14,11 @@ from components.charts import (
 )
 from components.footer import render_footer
 from components.header import render_header
+from components.investor_partner import (
+    classify_intent,
+    partner_reply,
+    render_investor_partner,
+)
 from components.metrics import kpi_items_from_result, render_metrics
 from components.sidebar import render_sidebar
 from components.tabs import render_tabs
@@ -27,6 +32,9 @@ __all__ = [
     "volume_figure",
     "render_footer",
     "render_header",
+    "classify_intent",
+    "partner_reply",
+    "render_investor_partner",
     "kpi_items_from_result",
     "render_metrics",
     "render_sidebar",
