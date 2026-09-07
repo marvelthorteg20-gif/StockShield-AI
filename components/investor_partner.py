@@ -10,7 +10,13 @@ import streamlit as st
 from components.investment_profile import (
     PROFILE_READY_MESSAGE,
     consume_profile_ready_event,
+    is_profile_complete,
     render_investment_profile,
+)
+from components.portfolio_builder import (
+    EXPLAINED_KEY,
+    portfolio_narrative,
+    render_portfolio_builder,
 )
 
 TITLE = "🧠 Investor Partner"
@@ -232,6 +238,14 @@ def render_investor_partner() -> None:
         history = _ensure_history()
         history.append({"role": "partner", "text": PROFILE_READY_MESSAGE})
         st.session_state[_MESSAGES_KEY] = history
+    if is_profile_complete() and not st.session_state.get(EXPLAINED_KEY):
+        history = _ensure_history()
+        profile = st.session_state.get("ss_ip_profile") or {}
+        history.append({"role": "partner", "text": portfolio_narrative(profile)})
+        st.session_state[_MESSAGES_KEY] = history
+        st.session_state[EXPLAINED_KEY] = True
+    if is_profile_complete():
+        render_portfolio_builder()
     history = _ensure_history()
 
     left, center = st.columns([1, 2.4], gap="large")
