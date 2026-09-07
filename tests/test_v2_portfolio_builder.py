@@ -115,7 +115,7 @@ def test_generate_stock_suggestions_does_not_invent_tickers():
     assert at.session_state[SUGGESTIONS_KEY] is True
     blob = " ".join(str(item.value) for item in at.markdown)
     info_text = " ".join(str(item.value) for item in at.info)
-    assert "not generated yet" in info_text.lower()
+    assert "No ranked snapshots yet" in info_text
     for ticker in ("AAPL", "MSFT", "NVDA", "TSLA", "GOOGL"):
         assert ticker not in blob
     history = at.session_state["ss_ip_messages"]

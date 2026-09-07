@@ -22,6 +22,7 @@ from components.investor_partner import (
 from components.investment_profile import format_profile, render_investment_profile
 from components.metrics import kpi_items_from_result, render_metrics
 from components.portfolio_builder import render_portfolio_builder
+from components.recommendation_board import render_recommendation_board
 from components.sidebar import render_sidebar
 from components.tabs import render_tabs
 
@@ -41,6 +42,7 @@ __all__ = [
     "render_investment_profile",
     "kpi_items_from_result",
     "render_portfolio_builder",
+    "render_recommendation_board",
     "render_metrics",
     "render_sidebar",
     "render_tabs",

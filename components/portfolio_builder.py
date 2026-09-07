@@ -149,7 +149,7 @@ def allocation_pie(slices: Sequence[tuple[str, int]], title: str = "Allocation")
 
 
 def render_portfolio_builder() -> None:
-    """Show allocation cards, pie, reasons, and the suggestions placeholder button."""
+    """Show allocation cards, pie, reasons, and the stock-suggestion board."""
     if not is_profile_complete():
         return
     profile = dict(st.session_state.get(PROFILE_KEY) or {})
@@ -177,6 +177,8 @@ def render_portfolio_builder() -> None:
     )
     if st.button(GENERATE_LABEL, type="primary", key="ss_ip_gen_stocks_btn"):
         st.session_state[SUGGESTIONS_KEY] = True
-    if st.session_state.get(SUGGESTIONS_KEY):
-        st.info("Stock suggestions are not generated yet. That slice comes next.")
     st.markdown("</div>", unsafe_allow_html=True)
+    if st.session_state.get(SUGGESTIONS_KEY):
+        from components.recommendation_board import render_recommendation_board
+
+        render_recommendation_board()
