@@ -96,7 +96,11 @@ def test_portfolio_builder_apptest_shows_moderate_cards_and_pie():
     assert "15%" in blob
     assert "Cash" in blob
     assert "10%" in blob
-    assert len(at.plotly_chart) >= 1
+    charts = at.get("plotly_chart")
+    assert len(charts) >= 1
+    spec = charts[0].proto.spec
+    assert '"type":"pie"' in spec
+    assert '"values":[30,25,20,15,10]' in spec
     assert GENERATE_LABEL in [btn.label for btn in at.button]
     history = at.session_state["ss_ip_messages"]
     partner_text = " ".join(item["text"] for item in history if item.get("role") == "partner")
@@ -110,7 +114,8 @@ def test_generate_stock_suggestions_does_not_invent_tickers():
     assert not at.exception
     assert at.session_state[SUGGESTIONS_KEY] is True
     blob = " ".join(str(item.value) for item in at.markdown)
-    assert "not generated yet" in blob.lower()
+    info_text = " ".join(str(item.value) for item in at.info)
+    assert "not generated yet" in info_text.lower()
     for ticker in ("AAPL", "MSFT", "NVDA", "TSLA", "GOOGL"):
         assert ticker not in blob
     history = at.session_state["ss_ip_messages"]

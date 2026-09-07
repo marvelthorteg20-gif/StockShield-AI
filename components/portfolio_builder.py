@@ -172,7 +172,7 @@ def render_portfolio_builder() -> None:
 
     st.plotly_chart(
         allocation_pie(slices, f"{risk} allocation"),
-        use_container_width=True,
+        width="stretch",
         config={"displaylogo": False},
     )
     if st.button(GENERATE_LABEL, type="primary", key="ss_ip_gen_stocks_btn"):
