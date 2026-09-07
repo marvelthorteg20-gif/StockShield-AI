@@ -7,6 +7,12 @@ from typing import Any
 
 import streamlit as st
 
+from components.investment_profile import (
+    PROFILE_READY_MESSAGE,
+    consume_profile_ready_event,
+    render_investment_profile,
+)
+
 TITLE = "🧠 Investor Partner"
 SUBTITLE = "Your Personal AI Investment Partner"
 TAGLINE = "Think Smarter. Invest Wiser. Never Invest Alone."
@@ -215,12 +221,18 @@ def render_investor_partner() -> None:
     pending = st.session_state.pop(_PENDING_KEY, None)
     if pending:
         _append_turn(str(pending))
-    history = _ensure_history()
 
     st.markdown('<div class="ip-wrap">', unsafe_allow_html=True)
     st.markdown(f'<p class="ip-title">{html.escape(TITLE)}</p>', unsafe_allow_html=True)
     st.markdown(f'<p class="ip-sub">{html.escape(SUBTITLE)}</p>', unsafe_allow_html=True)
     st.markdown(f'<p class="ip-tag">{html.escape(TAGLINE)}</p>', unsafe_allow_html=True)
+
+    render_investment_profile()
+    if consume_profile_ready_event():
+        history = _ensure_history()
+        history.append({"role": "partner", "text": PROFILE_READY_MESSAGE})
+        st.session_state[_MESSAGES_KEY] = history
+    history = _ensure_history()
 
     left, center = st.columns([1, 2.4], gap="large")
     with left:

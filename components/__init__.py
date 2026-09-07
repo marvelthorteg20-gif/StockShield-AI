@@ -19,6 +19,7 @@ from components.investor_partner import (
     partner_reply,
     render_investor_partner,
 )
+from components.investment_profile import format_profile, render_investment_profile
 from components.metrics import kpi_items_from_result, render_metrics
 from components.sidebar import render_sidebar
 from components.tabs import render_tabs
@@ -35,6 +36,8 @@ __all__ = [
     "classify_intent",
     "partner_reply",
     "render_investor_partner",
+    "format_profile",
+    "render_investment_profile",
     "kpi_items_from_result",
     "render_metrics",
     "render_sidebar",
